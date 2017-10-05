@@ -10,10 +10,12 @@
 #include<string.h>
 
 //1. GLOBAL VARIABLES 
-	char ** wiki; 
+	char ** globalWiki; 
+	char ** localWiki; 
 	char ** dict; 
 	int ** globalIndex; 
-	int ** localIndex; 
+	int * localIndex; 
+	char * word; 
 	int numLines, numWords; 
 	int err; 
 	int i; 
@@ -44,113 +46,144 @@ void initArrays()
 
 void initGlobalArrays() 
 {
-	wiki = (char **) malloc(numWiki * sizeof(char *));
-	wiki[0] = (char *) malloc(numWiki * lineLength * sizeof(char)); 
-	for(i = 1; i < numWiki; i++) 
+	globalWiki = (char **) malloc(numWiki * sizeof(char *)); //initialize global wiki
+	globalWiki[0] = (char *) malloc(numWiki * lineLength * sizeof(char)); //make it one large chunk of memory 
+	for(i = 1; i < numWiki; i++) //ever index is immediately following the previous in memory
 	{
-		wiki[i] = wiki[i - 1] + lineLength; 
+		globalWiki[i] = globalWiki[i - 1] + lineLength; 
 	} 
-	dict = (char **) malloc(numDict * sizeof(char *));
+	dict = (char **) malloc(numDict * sizeof(char *)); //initialize global dictionary as one large memory chunk
 	dict[0] = (char *) malloc(numDict * wordLength * sizeof(char)); 
 	for(i = 1; i < numDict; i ++) 
 	{
 		dict[i] = dict[i - 1] + wordLength; 
 	}
+	localIndex = (int *) malloc(101 * sizeof(int));
+	globalIndex = (int **) malloc(sizeof(int *) * numDict); //initialize globalIndex to store results 
+	for(i = start; i < end; i++) {
+		globalIndex[i] = (int *) malloc(sizeof(int) * ((100 * numCores) + 1)); 
+		globalIndex[i][0] = 1; //first entry in each row is a pointer to the next spot to fill in
+	}
 }
 
 void initLocalArrays() 
 {
-	
+	localWiki = (char **) malloc(range * sizeof(char *));
+	localWiki[0] = (char *) malloc(range * lineLength * sizeof(char)); 
+	for(i = 1; i < range; i++) 
+	{
+		localWiki[i] = localWiki[i - 1] + lineLength; 
+		
+	}
+	localIndex = (int *) malloc(101 * sizeof(int));
+	word = (char *) malloc(12 * sizeof(char)); 
 }
 
 void popArrays() 
 {
-	f = fopen("/homes/cwalrus96/hw3/keywords.txt", "r"); 
+	f = fopen("/homes/cwalrus96/hw3/keywords.txt", "r"); //reads the keywords file (address must be modified to be correct location)
 	if(NULL == f) {
 		perror("FAILED: "); 
 		return -1; 
 	} 
 	numWords = 0; 
-	while(err != EOF && numWords < numDict) 
+	while(err != EOF && numWords < numDict) //populates dictionary array with keywords
 	{
 		err = fscanf(f, "%[^\n]\n", dict[numWords]); 
 		numWords ++; 
 	}
 	fclose(f); 
-	f = fopen("/homes/cwalrus96/hw3/wiki_dump.txt", "r"); 
+	f = fopen("/homes/cwalrus96/hw3/wiki_dump.txt", "r"); //modify address with correct file location
 	if(NULL == f) {
 		perror("FAILED: "); 
 		return -1; 
 	}
-	while(err != EOF && numLines < numWiki) 
+	while(err != EOF && numLines < numWiki) //populates wiki array 
 	{
 		err = fscanf(f, "%[^\n]\n", wiki[numLines]); 
 		numLines ++; 
 	}
 	fclose(f); 
-	gettimeofday(&t1, NULL);
 }
 
 void distributeArrays() 
 {
-	
-}
-
-void recieveArrays() 
-{
+	for(i = 1; i < numCores; i++) //sends to every core from 1...n
+	{
+		start = (numWiki / (numCores - 1)) * i;  //get start and end ranges to break up the array
+		end = start + (numWiki / (numCores - 1)); 
+		if(i == numCores - 1) end = numDict; 
+		range = end - start;
+		MPI_Send(globalWiki[start], range * sizeof(char) * lineLength, MPI_CHAR, i, 0, MPI_COMM_WORLD); //sends every core their part
+	}
 	
 }
 
 void searchArrays() 
 {
-	start = (numDict / numCores) * rank; 
-	end = start + (numDict / numCores); 
-	if(rank == numCores - 1) end = numDict; 
-	range = end - start;
-	localIndex = (int **) malloc(range * sizeof(int *)); 
-	for(i = 0; i < range; i++) {
-		localIndex[i] = (int *) malloc(indexSize * sizeof(int)); 
-		localIndex[i][0] = 2; 
-		localIndex[i][1] = indexSize; 
-	}
-	for(numWords = start; numWords < end; numWords ++) 
+	int count; 
+	for(numWords = 0; numWords < numDict; numWords ++) //For every word in the dictionary
 	{ 
-		for(numLines = 0; numLines < numWiki; numLines ++) 
+		count = 0; 
+		MPI_Send(numWords, sizeof(int), MPI_INT, 0, 2, MPI_COMM_WORLD); //Send a message to root asking for next word (tag 2)
+		MPI_Recv(word, sizeof(char) * 12, MPI_CHAR, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &stat); //recieve next word
+		localIndex[0] = numWords; //first entry in index is the ID of the word
+		for(numLines = 0; numLines < range; numLines ++) //searches for word and adds indexes to array
 		{
-			if(strstr(wiki[numLines], dict[numWords]) != NULL) 
+			if(strstr(wiki[numLines], word) != NULL && count < 101) 
 			{
-				tempIndex = localIndex[numWords - start][0];
-				tempSize = localIndex[numWords - start][1];
-					if(tempIndex >= tempSize)
-					{
-						tempSize *= 2; 
-						localIndex[numWords - start] = (int *) realloc(localIndex[numWords - start], tempSize * sizeof(int)); 
-						localIndex[numWords - start][1] = tempSize; 
-					}
-				localIndex[numWords - start][tempIndex] = numLines; 
-				localIndex[numWords - start][0] ++; 
+				localIndex[count] = numLines; 
+				count++; 
 			}
 		}
+		MPI_Send(localIndex, sizeof(int) * (count + 1), MPI_INT, 0, 3, MPI_COMM_WORLD); //send index to root (tag 3) 
 	}	
 }
 
 void distributeKeys() 
 {
-	
+	int source; 
+	int tag; 
+	for(i = 1; i < numCores; i++) //every core must get every dictionary word 
+	{
+		for(j = 0; j < numDict * 2; j++) // *2 because each core will be sending two messages when they go through the loop
+		{
+			MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &stat);
+			source = stat.MPI_SOURCE; 
+			tag = stat.MPI_TAG; 
+			MPI_Get_count(&stat, MPI_INT, &size);
+			if(tag == 2) { //tag 2 is asking for the next word
+				MPI_Recv(numWords, sizeof(int), MPI_INT, source, 2, MPI_COMM_WORLD, &stat); 
+				MPI_Send(globalDict[numWords], sizeof(char) * 12, MPI_CHAR, source, 0, MPI_COMM_WORLD); 
+			}
+			else if(tag == 3) //tag 3 is sending the results 
+			{
+				MPI_Recv(localIndex, size, MPI_INT, source, 3, MPI_COMM_WORLD, &stat); //add every int recieved to the global inde
+				numLines = size / sizeof(int); 
+				for(k = 1; k < numLines; k++) 
+				{
+					int tempRow = localIndex[0]; 
+					int tempIndex = globalIndex[tempRow][0]; 
+					globalIndex[tempRow][tempIndex] = localIndex[k]; 
+					globalIndex[tempRow][0] ++; 
+				}
+				
+			}
+		}
+	}
 }	
 
 void printResults() 
-{
-	gettimeofday(&t2, NULL); 
+{ 
 	elapsedTime = (t2.tv_sec - t1.tv_sec) * 1000.0; 
 	elapsedTime += (t2.tv_usec - t1.tv_usec) / 1000.0; 
 	getrusage(RUSAGE_SELF, &memUsed); 
 	numWords = 0; 
 	while((numWords < numDict) && !(NULL == dict[numWords]))
 	{
-		if(globalIndex[numWords][0] > 2) {
+		if(globalIndex[numWords][0] > 1) {
 			printf("%-10s: ", dict[numWords]); 
-			i = 2; 
+			i = 1; 
 			while(!(NULL == globalIndex[numWords]) && (i < globalIndex[numWords][0]))
 			{
 				printf("%d, ", globalIndex[numWords][i]); 
@@ -177,12 +210,20 @@ void printResults()
 
 void freeAll() 
 {
-	free(dict[0]); 
-	free(dict); 
-	for(numWords = 0; numWords < range; numWords ++) 
+	if(rank == 0) 
 	{
-		free(localIndex[numWords]); 
+		freeGlobal(); 	
 	}
+	else {
+		freeLocal(); 	
+	}
+	
+}
+
+void freeGlobal() 
+{
+	free(globalDict[0]); 
+	free(globalDict); 
 	free(localIndex); 
 	if(rank == 0) 
 	{
@@ -192,9 +233,17 @@ void freeAll()
 		} 
 		free(globalIndex); 
 	}
-	free(wiki[0]); 
-	free(wiki); 
-	MPI_Finalize();	
+	free(globalWiki[0]); 
+	free(globalWiki); 
+	MPI_Finalize();		
+}
+
+void freeLocal() 
+{
+	free(localWiki[0]); 
+	free(localWiki); 
+	free(localIndex); 
+	free(word); 	
 }
 
 
@@ -206,13 +255,18 @@ int main(int argc, char** argv)
 	MPI_Init(&argc, &argv); 
 	MPI_Comm_size(MPI_COMM_WORLD, &numCores);
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank); 
+	start = (numWiki / (numCores - 1)) * rank; 
+	end = start + (numWiki / (numCores - 1)); 
+	if(rank == numCores - 1) end = numDict; 
+	range = end - start;
 	//3. All Processes will initialize their arrays
-		//Server will initialize global arrays, clients will initialize local arrays 
+	//Server will initialize global arrays, clients will initialize local arrays 
 	initArrays(); 	
 	//4. Only server will populate it's arrays 
 	if(rank == 0) 
 	{	 
 		popArrays(); 
+		gettimeofday(&t1, NULL);
 	}
 	//5. Server will distribute parts of the wiki to all the other threads, based on their rank. (EDIT) 
 	if(rank == 0) {
@@ -220,7 +274,7 @@ int main(int argc, char** argv)
 	}
 	else 
 	{
-		recieveArrays(); 	
+		MPI_Recv(localWiki[0], range * sizeof(char) * lineLength, MPI_CHAR, 0, 0, MPI_COMM_WORLD, &stat);	
 	}
 	//6. Each array (besides the server) will recieve keywords from the server (1 at a time)
 	//and search their portion of the wiki for that word (up to 100 instances). 
@@ -235,6 +289,7 @@ int main(int argc, char** argv)
 	//8. Print out results (master thread only) 
 	if(rank == 0) 
 	{
+		gettimeofday(&t2, NULL);
 		printResults(); 
 	}
 	//9. Free all arrays and finalize mpi processes 
