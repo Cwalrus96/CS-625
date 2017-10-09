@@ -1,1 +1,13 @@
+1. Brenner-Tershoff Potential Equation Implemented in LAMMPS - locate and move to project directory 
+2. Recieve Parameter Set from Dr. Liu (small one first, then full scale) 
+3. Use DFT calculations to produce training set 
+    training set includes
+    a) equations    of    state,    
+    b)    lattice    parameters,    
+    c)    cohesive    energies,    and    
+    d)    elastic    constants    of    different    crystalline    phases    of    Pt
+4. Plug parameter sets and training sets into potential equations 
 
+
+
+  
