@@ -1,12 +1,21 @@
 1. Brenner-Tershoff Potential Equation Implemented in LAMMPS - locate and move to project directory 
-2. Recieve Parameter Set from Dr. Liu (small one first, then full scale) 
-3. Use DFT calculations to produce training set 
+    (*  /homes/binliu/src/LAMMPS/lammps-28Jun14   *)
+2. Start with a population of 100 randomly generated parameter sets. 
+       Use Co-Co parameters (from file in email, table one) as a starting point. Variation +/- 25% (Physically meaningful ranges)
+3. Use DFT calculations to produce training set (DFT data should be available soon) 
     training set includes
     a) equations    of    state,    
     b)    lattice    parameters,    
     c)    cohesive    energies,    and    
     d)    elastic    constants    of    different    crystalline    phases    of    Pt
-4. Plug parameter sets and training sets into potential equations 
+4. Plug parameter sets and training sets into potential equations  (This part can be done in parallel) 
+    Check each member of the population for fitness 
+5. Rank and Order Parameter sets (Probably should be done serially - all processes send results to root for ordering) 
+6. Genetic Operations (Crossover / Mutation ) - Probably can be done in parallel 
+    Bash Script provided by Dr. Liu Contains algorithm for genetic mutation. Will need to be converted 
+7. Convergence test - possibly parallel - compare each individual to see if it is better than previous generations
+        If so, repeat steps  4 - 7 
+        If not, 
 
 
 
