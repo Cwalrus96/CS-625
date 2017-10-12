@@ -10,9 +10,12 @@
     d)    elastic    constants    of    different    crystalline    phases    of    Pt
 4. Plug parameter sets and training sets into potential equations  (This part can be done in parallel) 
     Check each member of the population for fitness 
+    Fitness is checked by taking a weighted sum of squared errors in predicted properties based on the training set.
+    Can be done with LAMMPS - need to develop interface
 5. Rank and Order Parameter sets (Probably should be done serially - all processes send results to root for ordering) 
 6. Genetic Operations (Crossover / Mutation ) - Probably can be done in parallel 
     Bash Script provided by Dr. Liu Contains algorithm for genetic mutation. Will need to be converted 
+    10% of individuals will be chosen for mutation, 90% will perform a crossover operation
 7. Convergence test - possibly parallel - compare each individual to see if it is better than previous generations
         If so, repeat steps  4 - 7 
         If not, 
