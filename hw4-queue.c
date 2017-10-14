@@ -12,15 +12,15 @@
 //1. GLOBAL VARIABLES
 char ** wiki;
 char *** jobs;
-char ** job; 
+char ** job;
 int ** globalIndex;
-int * localIndex;
+int ** localIndex;
 char * word;
 int numLines, numWords;
 int err;
 int i,j,k;
-int numWiki = 1000;
-int numDict = 1000;
+int numWiki = 1000000;
+int numDict = 50000;
 int lineLength = 2001;
 int wordLength = 10;
 int indexSize = 10;
@@ -31,12 +31,13 @@ int numCores, start, end, range, size, tempIndex, tempSize;
 int rank;
 double elapsedTime;
 MPI_Status stat;
-int jobSize = 100; 
-int jobNumber; 
+int jobSize = 100;
+int jobNumber;
+int numJobs;
 
 void initGlobalArrays()
 {
-  printf("initializing global arrays \n");
+//  printf("initializing global arrays \n");
   wiki = (char **) malloc(numWiki * sizeof(char *)); //initialize global wiki
   wiki[0] = (char *) malloc(numWiki * lineLength * sizeof(char)); //make it one large chunk of memory
   for(i = 1; i < numWiki; i++) //every index is immediately following the previous in memory
@@ -44,19 +45,19 @@ void initGlobalArrays()
       wiki[i] = wiki[i - 1] + lineLength;
     }
   //jobs is an array of jobs. Each job is a two dimensional char array made up of 100 words
-  int numJobs = numDict / jobSize; 
+  numJobs = numDict / jobSize;
   jobs = (char ***) malloc(numJobs * sizeof(char **));
   for(i = 0; i < numJobs; i ++) //Initialize each job
     {
       jobs[i] = (char **) malloc(jobSize * sizeof(char *)); //each job is a contiguous piece of memory
       jobs[i][0] = (char *) malloc( jobSize * wordLength * sizeof(char));
       for(j = 1; j < jobSize; j++) //initialize each word
-      {
-        jobs[i][j] = jobs[i][j - 1] +  wordLength; 
-      } 
+        {
+          jobs[i][j] = jobs[i][j - 1] +  wordLength;
+        }
     }
   globalIndex = (int **) malloc(sizeof(int *) * numDict); //initialize globalIndex to store results
-  printf("globalIndex will have %d rows \n", numDict);
+ // printf("globalIndex will have %d rows \n", numDict);
   globalIndex[0] = (int *) malloc(numDict * (jobSize + 1) * sizeof(int));
   for(i = 1; i < numDict; i++) {
     //printf("initializing globalIndex[%d] \n", i);
@@ -67,48 +68,48 @@ void initGlobalArrays()
 
 void initLocalArrays()
 {
+  numJobs = numDict / jobSize;
   wiki = (char **) malloc(numWiki * sizeof(char *)); //initialize global wiki
   wiki[0] = (char *) malloc(numWiki * lineLength * sizeof(char)); //make it one large chunk of memory
   for(i = 1; i < numWiki; i++) //every index is immediately following the previous in memory
     {
       wiki[i] = wiki[i - 1] + lineLength;
     }
-  job = (char **) malloc(jobSize * sizeof(char *)); 
-  job[0] = (char *) malloc(jobSize * wordLength * sizeof(char)); //job is one chunk 
+  job = (char **) malloc(jobSize * sizeof(char *));
+  job[0] = (char *) malloc(jobSize * wordLength * sizeof(char)); //job is one chunk
   for(i = 1; i < jobSize; i++) {
-    job[i] = job[i - 1] + wordLength;    
+    job[i] = job[i - 1] + wordLength;
   }
-  localIndex = (int **) malloc(jobSize * sizeof(int *)) //localIndex will hold the results - 100 lines, each 101 integers long.
+  localIndex = (int **) malloc(jobSize * sizeof(int *));  //localIndex will hold the results - 100 lines, each 101 integers long.
   localIndex[0] = (int *) malloc((jobSize + 1) * jobSize * sizeof(int)); //One chunk, for better communication
-  for(i = 1; i < jobSize; i++) 
-  {
-    localIndex[i] = localIndex[i - 1] + (jobSize + 1); 
-    localIndex[i][0] = 1; //first entry in each row is the index of the next open spot 
-  }
-  word = (char *) malloc(12 * sizeof(char));
+  for(i = 1; i < jobSize; i++)
+    {
+      localIndex[i] = localIndex[i - 1] + (jobSize + 1);
+      localIndex[i][0] = 1; //first entry in each row is the index of the next open spot
+    }
 }
 
 void initArrays()
 {
-        if(rank == 0)
-        {
-                initGlobalArrays();
-        }
-        else
-        {
-                initLocalArrays();
-        }
+  if(rank == 0)
+    {
+      initGlobalArrays();
+    }
+  else
+    {
+      initLocalArrays();
+    }
 }
 
 void popArrays()
 {
-  printf("populating arrays \n");
+ // printf("populating arrays \n");
   f = fopen("/homes/cwalrus96/hw3/keywords.txt", "r"); //reads the keywords file (address must be modified to be correct location)
   if(NULL == f) {
     perror("FAILED: ");
     exit(-1);
   }
-  for(i = 0; i < numJobs; i++) 
+  for(i = 0; i < numJobs; i++)
     {
       for(j = 0; j < jobSize; j++) {
         err = fscanf(f, "%[^\n]\n", jobs[i][j]);
@@ -131,68 +132,80 @@ void popArrays()
 
 void searchArrays()
 {
-  printf("rank %d searching arrays \n", rank);
+  //printf("rank %d searching arrays \n", rank);
   int count;
-  jobNumber = -2; 
-  while(jobNumber != -1) //keep requesting jobs until none are left (tag = -1)
+  jobNumber = -1;
+  while(jobNumber < numJobs) //keep requesting jobs until none are left (tag = -1)
     {
-      MPI_Send(&jobNumber, sizeof(int), MPI_INT, 0, -1, MPI_COMM_WORLD); //Send a message to root asking for next job (tag -1)
+     // printf("jobNumber == %d \n", jobNumber);
+     // printf("numJobs == %d \n", numJobs);
+      MPI_Send(&jobNumber, 1, MPI_INT, 0, numJobs, MPI_COMM_WORLD); //Send a message to root asking for next job (negative tags not allowed - tag = numJobs + 1)
       MPI_Recv(job[0], jobSize * wordLength, MPI_CHAR, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &stat); //recieve next job
-      jobNumber = stat.MPI_TAG; 
-      printf("rank %d just recieved job number %s \n", rank, jobNumber);
-      if(jobNumber != -1) {
-          for(i = 0; i < jobSize; i ++) //Goes through each word in the dictionary
+      jobNumber = stat.MPI_TAG;
+   //   printf("rank %d just recieved job number %d \n", rank, jobNumber);
+      if(jobNumber < numJobs) {
+        for(i = 0; i < jobSize; i++)
+        {
+          localIndex[i][0] = 1;
+        }
+        for(i = 0; i < jobSize; i ++) //Goes through each word in the dictionary
           {
-              for(j = 0; j < numWiki; j++) //goes through every line of the Wiki
+            for(j = 0; j < numWiki; j++) //goes through every line of the Wiki
               {
                 if(strstr(wiki[j], job[i]) != NULL && localIndex[i][0] <= 100)
-                {
-                  localIndex[i][localIndex[i][0]] = j; 
-                  localIndex[i][0] ++; 
-                }
+                  {
+                    int ind = localIndex[i][0];
+//                  printf("found match for word %d on line %d. Adding it to row %d index %d \n", (jobNumber * 100) + i, j, i, ind);
+                    localIndex[i][ind] = j;
+                    localIndex[i][0] ++;
+                  }
+              }
           }
-          printf("rank %d sending results for word %d to rank 0 size = %d \n", rank, numWords, count + 1);
-          MPI_Send(localIndex,(jobSize) * (jobSize + 1), MPI_INT, 0, jobNumber, MPI_COMM_WORLD); //send index to root (tag jobNumber)
+  //      printf("rank %d sending results for job %d to rank 0 \n", rank, jobNumber);
+        MPI_Send(localIndex[0], (jobSize) * (jobSize + 1), MPI_INT, 0, jobNumber, MPI_COMM_WORLD); //send index to root (tag jobNumber)
       }
     }
+//    printf("Exitting While Loop \n");
 }
 
 void distributeJobs()
 {
-  printf("distributing jobs \n");
+  //printf("distributing jobs \n");
   int source;
   int tag;
-  jobNumber = 0; 
-  for(i = 0; i < ((numJobs * 2) + (numCores - 1)); i++) //Go through the loop twice for every job, plus once for every core 
-                                                        //Each job needs to be sent out and results recieved. When all jobs are done, 
-                                                        //every process needs to recieve a -1
+  jobNumber = 0;
+  for(i = 0; i < ((numJobs * 2) + (numCores - 1)); i++) //Go through the loop twice for every job, plus once for every core
+    //Each job needs to be sent out and results recieved. When all jobs are done,
+    //every process needs to recieve a -1
     {
       MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &stat);
       source = stat.MPI_SOURCE;
       tag = stat.MPI_TAG;
       MPI_Get_count(&stat, MPI_INT, &size);
-      if(tag == -1) { //tag -1 is asking for the next word
-        if(jobNumber <= numJobs) { //still jobs to give out - give next job!
-            printf("About to recieve a request from rank %d \n", source);
-            MPI_Recv(&numWords, sizeof(int), MPI_INT, source, -1, MPI_COMM_WORLD, &stat);
-            printf("recieved a request from rank %d for job %d \n", source, jobNumber);
-            MPI_Send(jobs[jobNumber][0], jobSize * wordLength, MPI_CHAR, source, jobNumber, MPI_COMM_WORLD);
-            jobNumber ++; 
+      if(tag == numJobs ) { //tag (numJobs + 1)  is asking for the next word
+        if(jobNumber < numJobs) { //still jobs to give out - give next job!
+//        printf("About to recieve a request from rank %d \n", source);
+          MPI_Recv(&numWords, 1 , MPI_INT, source, numJobs, MPI_COMM_WORLD, &stat);
+//        printf("recieved a request from rank %d for job %d \n", source, jobNumber);
+          MPI_Send(jobs[jobNumber][0], jobSize * wordLength, MPI_CHAR, source, jobNumber, MPI_COMM_WORLD);
+//        printf("Incrementing JobNumber \n");
+          jobNumber ++;
+//        printf("JobNumber now equals %d \n", jobNumber);
         }
         else { //no more jobs - send a tag of -1
-            MPI_Recv(&numWords, 1, MPI_INT, source, -1, MPI_COMM_WORLD, &stat);
-            MPI_Send(jobs[0][0], jobSize * wordLength, MPI_CHAR, source, -1, MPI_COMM_WORLD);
-            jobNumber ++; 
+          MPI_Recv(&numWords, 1, MPI_INT, source, numJobs, MPI_COMM_WORLD, &stat);
+          MPI_Send(jobs[0][0], jobSize * wordLength, MPI_CHAR, source, numJobs, MPI_COMM_WORLD);
+          jobNumber ++;
         }
-          
+
       }
-      else //other tags are returning job results 
-      {
-          printf("About to recieve results for a word \n");
-          MPI_Recv(globalIndex[100 * tag], size, MPI_INT, source, tag, MPI_COMM_WORLD, &stat); //add every int recieved to the global index
-          printf("results recieved for job %d \n", tag);
-      }
-    }      
+      else //other tags are returning job results
+        {
+//        printf("About to recieve results for a word \n");
+          MPI_Recv(globalIndex[100 * (tag)], (jobSize) * (jobSize + 1), MPI_INT, source, tag, MPI_COMM_WORLD, &stat); //add every int recieved to the global index
+//        printf("results recieved for job %d \n", tag);
+        }
+    }
 }
 
 void printResults(int argc, char ** argv)
@@ -202,20 +215,20 @@ void printResults(int argc, char ** argv)
   elapsedTime += (t2.tv_usec - t1.tv_usec) / 1000.0;
   getrusage(RUSAGE_SELF, &memUsed);
   numWords = 0;
-  while((numWords < numDict) && !(NULL == dict[numWords]))
-    {
-      if(globalIndex[numWords][0] > 1) {
-        printf("%-10s: ", dict[numWords]);
-        i = 1;
-        while(!(NULL == globalIndex[numWords]) && (i < globalIndex[numWords][0]))
-          {
-            printf("%d, ", globalIndex[numWords][i]);
-            i++;
-          }
-        printf(" \n");
-      }
-      numWords ++;
-    }
+  for(i = 0; i < numJobs; i++) {
+        for(j = 0; j < jobSize; j++) {
+                int gInd = ((i * 100) + j);
+                if(globalIndex[gInd][0] > 1)
+                {
+                        printf("%-10s :", jobs[i][j]);
+                        for(k = 1; k < globalIndex[gInd][0]; k++)
+                        {
+                                printf("%d, ", globalIndex[gInd][k]);
+                        }
+                        printf(" \n");
+                }
+        }
+  }
   int groupSize;
   if(argc == 1) {
     groupSize = numCores;
@@ -234,12 +247,12 @@ void printResults(int argc, char ** argv)
 
 void freeGlobal()
 {
-  printf("freeing global arrays \n");
-  for(i = 0; i < numJobs; i++) 
-  {
-    free(jobs[i][0]); 
-    free(jobs[i]); 
-  }
+//  printf("freeing global arrays \n");
+  for(i = 0; i < numJobs; i++)
+    {
+      free(jobs[i][0]);
+      free(jobs[i]);
+    }
   free(jobs);
   if(rank == 0)
     {
@@ -253,21 +266,21 @@ void freeGlobal()
 
 void freeLocal()
 {
-  printf("rank %d freeing local arrays \n", rank);
-  free(wiki[0]); 
-  free(wiki); 
-  free(jobs[0]); 
-  free(jobs); 
+//  printf("rank %d freeing local arrays \n", rank);
+  free(wiki[0]);
+  free(wiki);
+  free(job[0]);
+  free(job);
   free(localIndex);
-  free(word);
+//  printf("rank %d done freeing local arrays \n", rank);
 }
 
 void freeAll() {
-        if(rank == 0)
-        {
-                freeGlobal();
-        }
-        else freeLocal();
+  if(rank == 0)
+    {
+      freeGlobal();
+    }
+  else freeLocal();
 }
 
 //MAIN
@@ -275,13 +288,13 @@ int main(int argc, char** argv)
 {
 
   //2. Initialize MPI (done)
-  printf("initializing MPI \n");
+//  printf("initializing MPI \n");
   MPI_Init(&argc, &argv);
   MPI_Comm_size(MPI_COMM_WORLD, &numCores);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   start = (numWiki / (numCores - 1)) * (rank - 1);
   end = start + (numWiki / (numCores - 1));
-  printf("rank = %d, start = %d, end = %d \n", rank, start, end);
+//  printf("rank = %d, start = %d, end = %d \n", rank, start, end);
   if(rank == numCores - 1) end = numDict;
   range = end - start;
   //3. All Processes will initialize their arrays
@@ -292,14 +305,14 @@ int main(int argc, char** argv)
     {
       popArrays();
     }
-  //5. Server will distribute the entire wiki to all threads 
-  printf("broadcasting wiki \n");
+  //5. Server will distribute the entire wiki to all threads
+//  printf("broadcasting wiki \n");
   MPI_Bcast(wiki[0], lineLength * numWiki, MPI_CHAR, 0, MPI_COMM_WORLD);
   //6. Each array (besides the server) will request "jobs" from the server (sets of 100 keywords)
   if(rank != 0) {
     searchArrays();
   }
-  //7. The server will listen to the other threads and hand out jobs 1 at a time 
+  //7. The server will listen to the other threads and hand out jobs 1 at a time
   if(rank == 0)
     {
       gettimeofday(&t1, NULL);
@@ -315,3 +328,4 @@ int main(int argc, char** argv)
   freeAll();
   return 0;
 }
+
