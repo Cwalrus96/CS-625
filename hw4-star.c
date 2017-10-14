@@ -19,8 +19,8 @@ char * word;
 int numLines, numWords;
 int err;
 int i,j,k;
-int numWiki = 1000;
-int numDict = 1000;
+int numWiki = 1000000;
+int numDict = 50000;
 int lineLength = 2001;
 int wordLength = 10;
 int indexSize = 10;
@@ -34,7 +34,7 @@ MPI_Status stat;
 
 void initGlobalArrays()
 {
-  printf("initializing global arrays \n");
+//  printf("initializing global arrays \n");
   globalWiki = (char **) malloc(numWiki * sizeof(char *)); //initialize global wiki
   globalWiki[0] = (char *) malloc(numWiki * lineLength * sizeof(char)); //make it one large chunk of memory
   for(i = 1; i < numWiki; i++) //ever index is immediately following the previous in memory
@@ -49,9 +49,9 @@ void initGlobalArrays()
     }
   localIndex = (int *) malloc(101 * sizeof(int));
   globalIndex = (int **) malloc(sizeof(int *) * numDict); //initialize globalIndex to store results
-  printf("globalIndex will have %d rows \n", numDict);
+//  printf("globalIndex will have %d rows \n", numDict);
   int rowLength = ((100 * (numCores - 1)) + 1);
-  printf("each row will have length of %d \n", rowLength);
+//  printf("each row will have length of %d \n", rowLength);
   globalIndex[0] = (int *) malloc(numDict * rowLength * sizeof(int));
   globalIndex[0][0] = 1;
   for(i = 1; i < numDict; i++) {
@@ -64,7 +64,7 @@ void initGlobalArrays()
 
 void initLocalArrays()
 {
-  printf("rank %d initializing local arrays \n", rank);
+//  printf("rank %d initializing local arrays \n", rank);
   localWiki = (char **) malloc(range * sizeof(char *));
   localWiki[0] = (char *) malloc(range * lineLength * sizeof(char));
   for(i = 1; i < range; i++)
@@ -90,7 +90,7 @@ void initArrays()
 
 void popArrays()
 {
-  printf("populating arrays \n");
+//  printf("populating arrays \n");
   f = fopen("/homes/cwalrus96/hw3/keywords.txt", "r"); //reads the keywords file (address must be modified to be correct location)
   if(NULL == f) {
     perror("FAILED: ");
@@ -118,30 +118,30 @@ void popArrays()
 
 void distributeArrays()
 {
-  printf("distributing arrays \n");
+//  printf("distributing arrays \n");
   for(i = 1; i < numCores; i++) //sends to every core from 1...n
     {
       start = (numWiki / (numCores - 1)) * (i - 1);  //get start and end ranges to break up the array
       end = start + (numWiki / (numCores - 1));
-      if(i == numCores - 1) end = numDict;
+      if(i == numCores - 1) end = numWiki;
       range = end - start;
-      MPI_Send(globalWiki[start], range * sizeof(char) * lineLength, MPI_CHAR, i, 0, MPI_COMM_WORLD); //sends every core their part
+      MPI_Send(globalWiki[start], range * lineLength, MPI_CHAR, i, 0, MPI_COMM_WORLD); //sends every core their part
     }
 
 }
 
 void searchArrays()
 {
-  printf("rank %d searching arrays \n", rank);
+//  printf("rank %d searching arrays \n", rank);
   int count;
   for(numWords = 0; numWords < numDict; numWords ++) //For every word in the dictionary
     {
-      printf("rank %d gonna search for word number %d \n", rank, numWords);
+//      printf("rank %d gonna search for word number %d \n", rank, numWords);
       count = 0;
-      MPI_Send(&numWords, sizeof(int), MPI_INT, 0, 2, MPI_COMM_WORLD); //Send a message to root asking for next word (tag 2)
-      printf("rank %d send message asking for word %d \n", rank, numWords);
-      MPI_Recv(word, sizeof(char) * 12, MPI_CHAR, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &stat); //recieve next word
-      printf("rank %d just recieved the word %s \n", rank, word);
+      MPI_Send(&numWords, 1, MPI_INT, 0, 2, MPI_COMM_WORLD); //Send a message to root asking for next word (tag 2)
+//      printf("rank %d send message asking for word %d \n", rank, numWords);
+      MPI_Recv(word, 12, MPI_CHAR, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &stat); //recieve next word
+//      printf("rank %d just recieved the word %s \n", rank, word);
       localIndex[0] = numWords; //first entry in index is the ID of the word
       for(numLines = 0; numLines < range; numLines ++) //searches for word and adds indexes to array
         {
@@ -150,17 +150,17 @@ void searchArrays()
             {
               //printf("rank %d found a match for the word %s on line %d count = %d new count = %d\n", rank, word, numLines + start, count, count + 1);
               count ++;
-              localIndex[count] = numLines;
+              localIndex[count] = numLines + start;
             }
         }
-      printf("rank %d sending results for word %d to rank 0 size = %d \n", rank, numWords, count + 1);
-      MPI_Send(localIndex, sizeof(int) * (count + 1), MPI_INT, 0, 3, MPI_COMM_WORLD); //send index to root (tag 3)
+//      printf("rank %d sending results for word %d to rank 0 size = %d \n", rank, numWords, count + 1);
+      MPI_Send(localIndex, (count + 1), MPI_INT, 0, 3, MPI_COMM_WORLD); //send index to root (tag 3)
     }
 }
 
 void distributeKeys()
 {
-  printf("distributing keys \n");
+//  printf("distributing keys \n");
   int source;
   int tag;
   for(i = 1; i < numCores; i++) //every core must get every dictionary word
@@ -172,30 +172,31 @@ void distributeKeys()
           tag = stat.MPI_TAG;
           MPI_Get_count(&stat, MPI_INT, &size);
           if(tag == 2) { //tag 2 is asking for the next word
-            printf("About to recieve a request from rank %d \n", source);
-            MPI_Recv(&numWords, sizeof(int), MPI_INT, source, 2, MPI_COMM_WORLD, &stat);
-            printf("recieved a request from rank %d for word %d \n", source, numWords);
-            MPI_Send(dict[numWords], sizeof(char) * 12, MPI_CHAR, source, 0, MPI_COMM_WORLD);
+//          printf("About to recieve a request from rank %d \n", source);
+            MPI_Recv(&numWords, 1, MPI_INT, source, 2, MPI_COMM_WORLD, &stat);
+//          printf("recieved a request from rank %d for word %d \n", source, numWords);
+            MPI_Send(dict[numWords], 12, MPI_CHAR, source, 0, MPI_COMM_WORLD);
           }
           else if(tag == 3) //tag 3 is sending the results
             {
-              printf("About to recieve results for a word \n");
+//            printf("About to recieve results for a word \n");
               MPI_Recv(localIndex, size, MPI_INT, source, 3, MPI_COMM_WORLD, &stat); //add every int recieved to the global indei
-              printf("results recieved \n");
+//            printf("results recieved \n");
               numLines = size / sizeof(int);
               int tempRow = localIndex[0];
-              printf("recieved results from rank %d for word %d size = %d\n", source, tempRow, numLines);
+//            printf("recieved results from rank %d for word %d size = %d\n", source, tempRow, numLines);
               if(NULL != globalIndex[tempRow]) {
                 for(k = 1; k < numLines; k++)
                         {
-                          printf("About to get tempIndex \n");
+//                        printf("About to get tempIndex \n");
                           int tempIndex = globalIndex[tempRow][0];
-                          printf("tempIndex = %d", tempIndex); fflush(stdout);
-                          printf("localIndex[k] = %d \n", localIndex[k]);
+//                        printf("tempIndex = %d", tempIndex); fflush(stdout);
+//                        printf("localIndex[k] = %d \n", localIndex[k]);
                           globalIndex[tempRow][tempIndex] = localIndex[k];
                           globalIndex[tempRow][0] ++;
                         }
-                }else printf("Why the fuck is %d NULL? \n", tempRow);
+//              }else printf("Why the f*** is %d NULL? \n", tempRow);
+                }
             }
         }
     }
@@ -240,7 +241,7 @@ void printResults(int argc, char ** argv)
 
 void freeGlobal()
 {
-  printf("freeing global arrays \n");
+//  printf("freeing global arrays \n");
   free(dict[0]);
   free(dict);
   free(localIndex);
@@ -256,7 +257,7 @@ void freeGlobal()
 
 void freeLocal()
 {
-  printf("rank %d freeing local arrays \n", rank);
+//  printf("rank %d freeing local arrays \n", rank);
   free(localWiki[0]);
   free(localWiki);
   free(localIndex);
@@ -276,14 +277,14 @@ int main(int argc, char** argv)
 {
 
   //2. Initialize MPI (done)
-  printf("initializing MPI \n");
+//  printf("initializing MPI \n");
   MPI_Init(&argc, &argv);
   MPI_Comm_size(MPI_COMM_WORLD, &numCores);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   start = (numWiki / (numCores - 1)) * (rank - 1);
   end = start + (numWiki / (numCores - 1));
-  printf("rank = %d, start = %d, end = %d \n", rank, start, end);
-  if(rank == numCores - 1) end = numDict;
+//  printf("rank = %d, start = %d, end = %d \n", rank, start, end);
+  if(rank == numCores - 1) end = numWiki;
   range = end - start;
   //3. All Processes will initialize their arrays
   //Server will initialize global arrays, clients will initialize local arrays
@@ -322,4 +323,3 @@ int main(int argc, char** argv)
   freeAll();
   return 0;
 }
-
