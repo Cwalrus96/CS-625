@@ -1,7 +1,15 @@
+What is the project about? 
+Using machine learning methods to optimize Bond-Order Potentials using the Brenner-Tershoff Potential 
+Bond-Order potentials are a class of interatomic potentials that are often used in simulations. 
+Can be used to describe multiple potential bonding states of an atom, which can help with predicting chemical reactions. 
+Many techniques taken from genetic algorithms 
+
+How will the project be implemented 
 1. Brenner-Tershoff Potential Equation Implemented in LAMMPS - locate and move to project directory 
     (*  /homes/binliu/src/LAMMPS/lammps-28Jun14   *)
 2. Start with a population of 100 randomly generated parameter sets. 
-       Use Co-Co parameters (from file in email, table one) as a starting point. Variation +/- 25% (Physically meaningful ranges)
+       Use Co-Co (Cobalt pair bond) parameters (from file in email, table one) as a starting point. 
+       Variation +/- 25% (Physically meaningful ranges)
 3. Use DFT calculations to produce training set (DFT data should be available soon) 
     training set includes
     a) equations    of    state,    
@@ -16,10 +24,17 @@
 6. Genetic Operations (Crossover / Mutation ) - Probably can be done in parallel 
     Bash Script provided by Dr. Liu Contains algorithm for genetic mutation. Will need to be converted 
     10% of individuals will be chosen for mutation, 90% will perform a crossover operation
-7. Convergence test - possibly parallel - compare each individual to see if it is better than previous generations
-        If so, repeat steps  4 - 7 
-        If not, 
+    crossover operations will be determined through tournament selection 
+        Randomly select a number of individuals - the fittest individual is chosen for crossover. May test several tournament sizes. 
+        Sections of parameters from each parent will be given to each child. Will end up with 200 new options 
+7. Convergence test - possibly parallel - compare each individual to see if it is better than previous generations.
+        If so, keep top 100 and repeat steps  4 - 7 
+        If not, you are done optimizing. 
+8. Take 20 best individuals for local minimization using simplex method using the 20 individuals as starting values. (probably parallel) 
+    best individual is chosen as final optimized parameter set. 
 
 
+Hardware limitations/Numbers 
+    Assuming everything is run on the elf nodes that are set aside for the class. Either 100 or 101 threads (depends if using a root thread) 
 
   
