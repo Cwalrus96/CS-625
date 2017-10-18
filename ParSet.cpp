@@ -19,6 +19,6 @@ ParSet::RandomizeParameters(float p) {
   float seed = rand(); 
   float sign = (seed % 2 == 0) ? -1.0 : 1.0; 
   seed = seed / RAND_MAX; 
-  float change = seed * 25.0 * sign; 
+  float change = seed * 0.25 * sign; 
   return (p + change); 
 }
