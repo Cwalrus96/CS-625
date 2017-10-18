@@ -11,4 +11,5 @@ class ParSet {
   float lambda1; 
   float a; 
   ParSet(); 
+  RandomizeParameters(float p); 
 }
