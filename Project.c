@@ -4,6 +4,13 @@
 #include <stdio.h> 
 #include <math.h>
 #include "ParSet.h" 
+
+//Global Variables 
+ParSet * pars; //This variable will hold the array of parameter sets
+int i; 
+ParSet currentBest; 
+ParSet oldBest; 
+
 https://github.com/Cwalrus96/CS-625
 //Step 1 - Initial parameters pulled from the Cobalt-Cobalt bonds in Table 1 of the paper 
 //"Machine Learnt Bond Order Potential to Model Metal-Organic (Co-C) Heterostructures"
@@ -13,7 +20,11 @@ https://github.com/Cwalrus96/CS-625
 
 void initialParameters(*(ParSet)) //This will create the original 100 parameter sets 
 {
-  
+    pars = (ParSet*) malloc(200 * sizeof(ParSet)); 
+    for(i = 0; i < 100; i++) 
+    {
+        initializeParSet(&pars[i], i);    
+    }
 }
 
 void DFTData() //This function will read in the DFT data from a file and save it somewhere 
@@ -21,14 +32,41 @@ void DFTData() //This function will read in the DFT data from a file and save it
   
 }
 
-void getFitness(*ParSet, int setID) //In this function we will feed the necessary information into LAMMPS and get results back (Parallel)
+void getFitnessAll(ParSet * p, int setID) //This function will get the fitness scores for the specified subset of individuals
 {
-  
+    if(setID == 0) //0 means get fitness for first 100 ParSets
+    {
+        for(i = 0; i < 100; i++) 
+        {
+            getFitness(&pars[i]);    
+        }
+    }
+    else if(setID == 1) 
+    {
+        for(i = 100; i < 200; i++) 
+        {
+            getFitness(&pars[i]);    
+        }
+    }
 }
 
-void rankParSets(*(ParSet)) //This function will take the list of parameters and put them in order based on fitness 
+void getFitness(ParSet * p) //This function will get the fitness score for the specified individual using LAMMPS
+{ 
+    
+}
+
+int parSetComparator(const void * a, const void * b) //this function will be used to sort based on fitness
 {
-  
+    float x = ((ParSet *) a)->error; 
+    float y = ((ParSet *) b)->error; 
+    if(x < y) return -1; 
+    else if (x > y) return 1; 
+    else return 0; 
+}
+
+void rankParSets(ParSet* p) //This function will take the list of parameters and put them in order based on fitness (quickSort) 
+{
+  qsort(p, 200, sizeof(ParSet), parSetComparator); 
 }
 
 void geneticOperations() //This will coordinate and call crossover and mutate 
@@ -66,8 +104,7 @@ int main(int argc, char** argv) {
 //Step 2. Enter loop 
   while(currentBest != oldBest) 
   {
-    getFitness(p,0); 
-    rankParSets(); //might not need this 
+    getFitness(p,0);  
     geneticOperations(); 
     getFitness(p, 1)
     rankParSets(); 
