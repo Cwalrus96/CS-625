@@ -20,7 +20,7 @@ typedef Struct parSet { ///This structure will be used to hold individual parame
 }ParSet; 
 
 
-initializeParSet(*ParSet p); //This function will take a ParSet pointer and initialize that structure with randomized values
+initializeParSet(*ParSet p, int id); //This function will take a ParSet pointer and initialize that structure with randomized values
 
 randomizeParameter(float p); //This function will return a parameter that has randomly been adjusted in the range of +/-25%
 
