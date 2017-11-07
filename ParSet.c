@@ -1,7 +1,7 @@
 #include "ParSet.h"
 
 
-initializeParSet(*ParSet p) {
+initializeParSet(*ParSet p, int id) {
   p->c = RandomizeParameter(30611); 
   p->d = RandomizeParameter(113.064); 
   p->h = RandomizeParameter(0.5289); 
@@ -13,6 +13,8 @@ initializeParSet(*ParSet p) {
   p->s = RandomizeParameter(3.25); 
   p->lambda1 = RandomizeParameter(2.9699); 
   p->a = RandomizeParameter(1017.1); 
+  p->id = id; 
+  p->error = -1.0; 
 }
 
 randomizeParameter(float p) {
