@@ -16,7 +16,8 @@ typedef Struct parSet { ///This structure will be used to hold individual parame
   float r; 
   float s; 
   float lambda1; 
-  float a;  
+  float a; 
+  float mutate = 0.0; 
 }ParSet; 
 
 
