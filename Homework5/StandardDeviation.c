@@ -93,6 +93,7 @@ int main(int argc, char ** argv)
     //Step 3 - Rank 0 recieves the sum of all the randomly generated numbers from the worker processes, and calculates the mean
     else 
     {
+        gettimeofday(&t1, NULL); 
         recieveSums();       
         mean = sum / N; 
     }
@@ -108,9 +109,14 @@ int main(int argc, char ** argv)
     //Step 7 - Finally, Root node takes the square root of the variance to get the standard deviation. 
     else
     {
-        getStandardDeviation();    
+        getStandardDeviation();  
+        gettimeofday(&t2, NULL); 
+        getrusage(RUSAGE_SELF, &memUsed);
+        elapsedTime = (t2.tv_sec - t1.tv_sec) * 1000; 
+        elapsedTime += (t2.tv_usec - t2.tv_usec) / 1000; 
+        printf("Standard Deviation is %f \n", dev); 
+        printf("DATA, CORES, %d, TIME, %f, MEMORY, %ld \n", numCores, elapsedTime, memUsed.ru_maxrss) //ADD TIMERS AND MEMORY MANAGEMENT DATA
     }
-    printf("Standard Deviation is %f \n", dev); 
-    printf("DATA -") //ADD TIMERS AND MEMORY MANAGEMENT DATA
+
 
 }
