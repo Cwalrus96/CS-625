@@ -6,7 +6,7 @@
 #include "ParSet.h" 
 
 //Global Variables 
-ParSet * pars; //This variable will hold the array of parameter sets
+ParSet ** pars; //This variable will hold the array of parameter sets
 int i; //used for loops
 int r; // used for random variables
 ParSet * currentBest; //This variable will hold the parameter set with the highest fitness score
@@ -19,9 +19,9 @@ https://github.com/Cwalrus96/CS-625
 //Initializing a ParSet object creates a new set of parameters that is based on the optimized parameters in the papers
 // but randomized +-25%. 
 
-void initialParameters(*(ParSet)) //This will create the original 100 parameter sets 
+void initialParameters() //This will create the original 100 parameter sets 
 {
-    pars = (ParSet*) malloc(200 * sizeof(ParSet)); 
+    pars = (ParSet**) malloc(200 * sizeof(ParSet *)); 
     for(i = 0; i < 100; i++) 
     {
         initializeParSet(&pars[i], i);    
