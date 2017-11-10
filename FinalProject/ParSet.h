@@ -17,7 +17,8 @@ typedef Struct parSet { ///This structure will be used to hold individual parame
   float s; 
   float lambda1; 
   float a; 
-  float mutate = 0.0; 
+  float mutate = 0.0;  //keeps track if this individual is selected for mutation
+  float selected = 0.0; //keeps track if this individual is selected for tournament select 
 }ParSet; 
 
 
