@@ -89,6 +89,19 @@ void getDFTData() //This function will read in the DFT data from a file and save
         printf("Error: file not found"); 
         exit(1);
     }
+    char ** dftLines = (char **)malloc(31 * sizeof(char *));  //create some temporary arrays to store input from the file 
+    char ** tokens = (char **) malloc(9 * sizeof(char *));
+    for(i = 0; i < 31; i++) 
+    {
+      free(dftLines[i]); 
+    }
+    free(dftLines); 
+    for(t = 0; t < 9; t++) 
+    {
+        free(tokens[t]);    
+    }
+    free(tokens); 
+ 
 }
 
 void getFitness(ParSet * p)
@@ -238,10 +251,27 @@ void simplex()  //do final local minimization. maybe in LAMMPS?
 
 }
 
-void freeAll()
+void freeAll() //this function is called at the end, and frees all global arrays 
 {
-  
+  pars = (ParSet**) malloc(200 * sizeof(ParSet *));
+  for(i = 0; i < 100; i++)
+    {
+      free(pars[i]); 
+    }
+  free(pars); 
+  for(i = 0; i < 8; i++) 
+  {
+    free(tournament[i]);  
+  }
+  free(tournament); 
+  for(i = 0; i < 24; i++)
+  {
+    free(data[i]); 
+  }
+  free(data); 
 }
+
+
 int main(int argc, char** argv) {
   //Step 1. Get initial parameters
   initialParameters(pars); //we will make a ParSet array p, and populate it with initial parameters
