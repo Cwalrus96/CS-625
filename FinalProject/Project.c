@@ -4,10 +4,12 @@
 #include <stdio.h>
 #include <math.h>
 #include "ParSet.h"
+#include "DFT.h" 
 
 //Global Variables
 ParSet ** pars; //This variable will hold the array of parameter sets
 ParSet ** tournament; //This is a temporary array that will be used for tournament select
+DFT ** data; //This is an array of DFT struct pointers, which will hold data read in from the input file and store it
 int i; //used for loops
 int r; // used for random variables
 ParSet * currentBest; //This variable will hold the parameter set with the highest fitness score
@@ -31,9 +33,62 @@ void initialParameters() //This will create the original 100 parameter sets
   tournament = (ParSet **) malloc(8 * sizeof(ParSet*));
 }
 
-void DFTData() //This function will read in the DFT data from a file and save it somewhere
+void getDFTData() //This function will read in the DFT data from a file and save it somewhere
 {
-
+    data = (DFT **) malloc(24 * sizeof(DFT *));
+    char ** dftLines = (char **)malloc(31 * sizeof(char *));  //create some temporary arrays to store input from the file 
+    char ** tokens = (char **) malloc(9 * sizeof(char *));
+    int t; 
+    int d; 
+    for(i = 0; i < 31; i++) 
+    {
+      dftLines[i] = (char *) malloc(100 * sizeof(char)); 
+    }
+    for(t = 0; t < 9; t++) 
+    {
+        tokens[t] = (char *) malloc(20 * sizeof(char));    
+    }
+    for(d = 0; d < 24; d++) 
+    {
+        data[d] = (DFT *) malloc(sizeof(DFT));    
+    }
+    FILE * file; 
+    if ((file = fopen("trainset.in", "r")) != NULL) 
+    {
+        i = 0; 
+        d = 0; 
+        while((i < 31) && (fgets(dftLines[i], 100, file) != NULL)) // Read all lines from the file and store them in the dftLines array
+        {
+            fputs ( line, stdout ); /* write the line */
+        }
+        for(i = 0; i < 31; i++) 
+        {
+          if(dftLines[i][0] == ' ') //Starting with a space means it is a data line. tokenize the line and store the tokens in a DFT struct 
+          {
+              t = 0; 
+              tokens[t] = strtok (dftLines[i]," /");
+              while ((tokens[t] != NULL) && (t < 9)) //after this look all 8 tokens should be in the tokens array
+              {
+                t++; 
+                tokens[t] = strtok (NULL, " /");
+              } //now we will use the tokens to fill in the attributes of a DFT struct in the data array
+              data[d]->weight = atof(tokens[0]); 
+              data[d]->op1 = tokens[1][0]; 
+              strcpy(data[d]->key1, tokens[2]); 
+              data[d]->n1 = atoi(tokens[3]); 
+              data[d]->op2 = tokens[4][0]; 
+              strcpy(data[d]->key2, tokens[5]); 
+              data[d]->n2 = atoi(tokens[6]); 
+              data[d]->energy = atof(tokens[7]);
+              d++; 
+          }
+        }
+    }
+    else 
+    {
+        printf("Error: file not found"); 
+        exit(1);
+    }
 }
 
 void getFitness(ParSet * p)
@@ -183,10 +238,14 @@ void simplex()  //do final local minimization. maybe in LAMMPS?
 
 }
 
+void freeAll()
+{
+  
+}
 int main(int argc, char** argv) {
   //Step 1. Get initial parameters
   initialParameters(pars); //we will make a ParSet array p, and populate it with initial parameters
-  DFTData();
+  getDFTData();
   //Step 2. Enter loop
   while(currentBest != oldBest)
     {
@@ -200,6 +259,8 @@ int main(int argc, char** argv) {
         }
       currentBest = pars[0];
     }
+  simplex(); 
+  freeAll(); 
   printf("Exitting");
   return 0;
 }
