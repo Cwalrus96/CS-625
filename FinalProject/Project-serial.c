@@ -173,10 +173,10 @@ ParSet * tournamentSelect() //This function will be used to select individuals f
 
 }
 
-ParSet * mutate(ParSet * p) //This will use the mutation algorithm to modify the parameter set, and return the mutated individual
+/**ParSet * mutate(ParSet * p) //This will use the mutation algorithm to modify the parameter set, and return the mutated individual
 {
   return p;
-}
+} **/
 
 //This will use the crossover algorithm to combine two parameter sets, and add the results to pars
 //Lots of options here - can separate based on every single attribute, or split into chunks.
@@ -233,7 +233,8 @@ void geneticOperations() //This will coordinate and call crossover and mutate
       if(pars[r]->mutate == 0.0) //If the individual at that index hasn't been mutated yet, mutate it
         {
           pars[r]->mutate = 1.0; //Mark that this individual has been mutated
-          pars[100 + numMutated] = mutate(pars[r]); //add newly mutated child to the end of the array
+          //pars[100 + numMutated] = mutate(pars[r]; //add newly mutated child to the end of the array
+          initializeParSet(100 + numMutated, id++); 
           numMutated ++;
         }
     }
@@ -246,9 +247,14 @@ void geneticOperations() //This will coordinate and call crossover and mutate
     }
 }
 
-void simplex()  //do final local minimization. maybe in LAMMPS?
+/**void simplex()  //do final local minimization. maybe in LAMMPS?
 {
 
+}**/
+
+void printResults() //will be used to print the results at the end of the function
+{
+  
 }
 
 void freeAll() //this function is called at the end, and frees all global arrays 
@@ -289,7 +295,8 @@ int main(int argc, char** argv) {
         }
       currentBest = pars[0];
     }
-  simplex(); 
+  //simplex(); 
+  printResults(); 
   freeAll(); 
   printf("Exitting");
   return 0;
