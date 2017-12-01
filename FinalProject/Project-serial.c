@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#include<sys/time.h>
+#include<sys/resource.h>
 #include "ParSet.h"
 #include "DFT.h" 
 
@@ -15,6 +17,8 @@ int r; // used for random variables
 ParSet * currentBest; //This variable will hold the parameter set with the highest fitness score
 ParSet * oldBest;  //This variable will hold the old parameter set with the highest fitness score
 int id; //keeps track of the id for new ParSet individuals
+struct timeval t1, t2; //used for measuring time intervals
+struct rusage memUsed;
 
 //https://github.com/Cwalrus96/CS-625
 //Step 1 - Initial parameters pulled from the Cobalt-Cobalt bonds in Table 1 of the paper
@@ -283,6 +287,7 @@ int main(int argc, char** argv) {
   initialParameters(pars); //we will make a ParSet array p, and populate it with initial parameters
   getDFTData();
   //Step 2. Enter loop
+  gettimeofday(&t1, NULL);
   while(currentBest != oldBest)
     {
       getFitnessAll(pars,0);
@@ -296,6 +301,10 @@ int main(int argc, char** argv) {
       currentBest = pars[0];
     }
   //simplex(); 
+  gettimeofday(&t2, NULL);
+  elapsedTime = (t2.tv_sec - t1.tv_sec) * 1000.0;
+  elapsedTime += (t2.tv_usec - t1.tv_usec) / 1000.0;
+  getrusage(RUSAGE_SELF, &memUsed);
   printResults(); 
   freeAll(); 
   printf("Exitting");
