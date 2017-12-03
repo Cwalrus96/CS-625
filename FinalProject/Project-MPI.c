@@ -18,10 +18,13 @@ ParSet * currentBest; //This variable will hold the parameter set with the highe
 ParSet * oldBest;  //This variable will hold the old parameter set with the highest fitness score
 int id; //keeps track of the id for new ParSet individuals
 struct timeval t1, t2; //used for measuring time intervals
-struct rusage memUsed;
-int mutateMax;
-int numCores, rank;
-int exit = 0; 
+struct rusage memUsed; //Keeps track of memory usage
+int mutateMax; //Can be used to adjust the rate of mutation
+int numCores, rank; 
+int exit = 0; //Used to control while loops
+int source, tag, jobNumber;
+ParSet * job; 
+MPI_Status stat;
 
 //https://github.com/Cwalrus96/CS-625
 //Step 1 - Initial parameters pulled from the Cobalt-Cobalt bonds in Table 1 of the paper
@@ -116,23 +119,6 @@ void getFitness(ParSet * p)
 
 }
 
-void getFitnessAll(ParSet ** p, int setID) //This function will get the fitness scores for the specified subset of individuals
-{
-    if(setID == 0) //0 means get fitness for first 100 ParSets
-    {
-        for(i = 0; i < 100; i++)
-        {
-            getFitness(pars[i]);
-        }
-    }
-    else if(setID == 1)
-    {
-        for(i = 100; i < 200; i++)
-        {
-            getFitness(pars[i]);
-        }
-    }
-}
 
 int parSetComparator(const void * a, const void * b) //this function will be used to sort based on fitness
 {
@@ -258,6 +244,84 @@ void geneticOperations() //This will coordinate and call crossover and mutate
 
 }**/
 
+void distributeJobs() //This function will be called once per generation by Rank 0, distributing jobs to all other processes
+{
+    int jobRequest; 
+    jobNumber = 0; 
+    while((pars[jobNumber]->error > 0) && (jobNumber < 100)) //Dont send out individuals if fitness has already been calculated
+    {
+        jobNumber++;
+    }
+    while(jobNumber < 100) //Send out jobs until end is reached 
+    {
+        MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &stat);
+        source = stat.MPI_SOURCE; 
+        tag = stat.MPI_TAG;
+        if(tag == 200) //tag of 200 is a job request - send out next job
+        {
+            MPI_Recv(&jobRequest, 1, MPI_INT, source, 200, MPI_COMM_WORLD, &stat); //Recieve a job request
+            //ParSet struct is a contiguous array of floats. Use address of first element as pointer
+            MPI_Send(&(pars[jobNumber]->error), 14, MPI_FLOAT, source, jobNumber, MPI_COMM_WORLD);
+            jobNumber ++; 
+            while((pars[jobNumber]->error > 0) && (jobNumber < 100)) //Dont send out individuals if fitness has already been calculated
+            {
+                jobNumber++;
+            }
+        }
+        else //Other tags mean they are sending completed job
+        {
+            //update ParSet array with newly completed job
+            MPI_Recv(&(pars[tag]->error), 14, MPI_FLOAT, source, tag, MPI_COMM_WORLD, &stat);       
+        }
+    }
+    geneticOperations();
+    while(jobNumber < 200) //Send out jobs until end is reached 
+    {
+        MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &stat);
+        source = stat.MPI_SOURCE; 
+        tag = stat.MPI_TAG;
+        if(tag == 200) //tag of 200 is a job request - send out next job
+        {
+            MPI_Recv(&jobRequest, 1, MPI_INT, source, 200, MPI_COMM_WORLD, &stat); //Recieve a job request
+            //ParSet struct is a contiguous array of floats. Use address of first element as pointer
+            MPI_Send(&(pars[jobNumber]->error), 14, MPI_FLOAT, source, jobNumber, MPI_COMM_WORLD);
+            jobNumber ++; 
+        }
+        else //Other tags mean they are sending completed job
+        {
+            //update ParSet array with newly completed job
+            MPI_Recv(&(pars[tag]->error), 14, MPI_FLOAT, source, tag, MPI_COMM_WORLD, &stat);       
+        }
+    }  
+    rankParSets(pars,0);
+    if(currentBest != NULL) //Update oldBest and currentBest
+    {
+        oldBest = currentBest;
+    }
+    currentBest = pars[0];
+    if(oldBest == currentBest) //If they still match, this is the exit condition. Program is done
+    {
+       exit = 1; 
+    }
+}
+
+void requestJobs() //This function will be called by all worker processes until they recieve a signal to move on 
+{
+    //Send MPI message asking for a job 
+    MPI_Send(1, 1, MPI_INT, 0, 200, MPI_COMM_WORLD); //Send message to root asking for job (tag 200 is job request);
+    MPI_Recv(&(job->error), 14, MPI_FLOAT, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &stat); //Recieve job into the Job ParSet;  
+    jobNumber = stat.MPI_TAG; 
+    if(jobNumber < 200) 
+    {
+        getFitness(job); 
+        MPI_Send(&(job->error), 14, MPI_FlOAT, 0, jobNumber, MPI_COMM_WORLD); //Send completed job back to root; 
+    }
+    else 
+    {
+        exit = 1;    
+    }
+}
+
 void printResults() //will be used to print the results at the end of the function
 {
   
@@ -302,35 +366,27 @@ int main(int argc, char** argv) {
     {
         while(exit != 1)  
         {
-            /**
-            getFitnessAll(pars,0);
-            geneticOperations();
-            getFitnessAll(pars, 1);
-            rankParSets(pars,0);
-            if(currentBest != NULL)
-            {
-                oldBest = currentBest;
-            }
-            currentBest = pars[0];
-            **/
             distributeJobs(); 
         }
+        //simplex(); 
+        gettimeofday(&t2, NULL);
+        elapsedTime = (t2.tv_sec - t1.tv_sec) * 1000.0;
+        elapsedTime += (t2.tv_usec - t1.tv_usec) / 1000.0;
+        getrusage(RUSAGE_SELF, &memUsed);
+        printResults(); 
+        freeAll(); 
+        MPI_Finalize(); 
+        printf("Exitting");
     }
     else
-    {
+    {  
+        job = (ParSet *) malloc(sizeof(ParSet)); 
         while(exit != 1) 
         {
             requestJobs();    
         }
+        free(job);    
     }
-    //simplex(); 
-    gettimeofday(&t2, NULL);
-    elapsedTime = (t2.tv_sec - t1.tv_sec) * 1000.0;
-    elapsedTime += (t2.tv_usec - t1.tv_usec) / 1000.0;
-    getrusage(RUSAGE_SELF, &memUsed);
-    printResults(); 
-    freeAll(); 
-    printf("Exitting");
     return 0;
 }
 
