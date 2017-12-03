@@ -1,7 +1,7 @@
 #include "ParSet.h"
 
 
-initializeParSet(ParSet * p, int id) {
+initializeParSet(ParSet * p, int id) { //Initialize all parameters using base values +- 25%
   p->c = RandomizeParameter(30611); 
   p->d = RandomizeParameter(113.064); 
   p->h = RandomizeParameter(0.5289); 
@@ -17,7 +17,7 @@ initializeParSet(ParSet * p, int id) {
   p->error = -1.0; 
 }
 
-randomizeParameter(float p) {
+randomizeParameter(float p) { //this function will take a base value as a parameter and adjust it randomly in the range of +-25%
   float seed = rand(); 
   float sign = (seed % 2 == 0) ? -1.0 : 1.0; 
   seed = seed / RAND_MAX; 
