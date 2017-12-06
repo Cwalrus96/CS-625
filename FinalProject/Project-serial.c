@@ -6,7 +6,7 @@
 #include<sys/time.h>
 #include<sys/resource.h>
 #include "ParSet.h"
-#include "DFT.h" 
+#include "DFT.h"
 
 //Global Variables
 ParSet ** pars; //This variable will hold the array of parameter sets
@@ -20,6 +20,7 @@ int id; //keeps track of the id for new ParSet individuals
 struct timeval t1, t2; //used for measuring time intervals
 struct rusage memUsed;
 int mutateMax;
+long elapsedTime;
 
 //https://github.com/Cwalrus96/CS-625
 //Step 1 - Initial parameters pulled from the Cobalt-Cobalt bonds in Table 1 of the paper
@@ -36,77 +37,6 @@ void initialParameters() //This will create the original 100 parameter sets
         initializeParSet(pars[id], id);
     }
     tournament = (ParSet **) malloc(8 * sizeof(ParSet*));
-}
-
-void getDFTData() //This function will read in the DFT data from a file and save it somewhere
-{
-    data = (DFT **) malloc(24 * sizeof(DFT *));
-    char ** dftLines = (char **)malloc(31 * sizeof(char *));  //create some temporary arrays to store input from the file 
-    char ** tokens = (char **) malloc(9 * sizeof(char *));
-    int t; 
-    int d; 
-    for(i = 0; i < 31; i++) 
-    {
-        dftLines[i] = (char *) malloc(100 * sizeof(char)); 
-    }
-    for(t = 0; t < 9; t++) 
-    {
-        tokens[t] = (char *) malloc(20 * sizeof(char));    
-    }
-    for(d = 0; d < 24; d++) 
-    {
-        data[d] = (DFT *) malloc(sizeof(DFT));    
-    }
-    FILE * file; 
-    if ((file = fopen("trainset.in", "r")) != NULL) 
-    {
-        i = 0; 
-        d = 0; 
-        while((i < 31) && (fgets(dftLines[i], 100, file) != NULL)) // Read all lines from the file and store them in the dftLines array
-        {
-            fputs ( line, stdout ); /* write the line */
-        }
-        for(i = 0; i < 31; i++) 
-        {
-            if(dftLines[i][0] == ' ') //Starting with a space means it is a data line. tokenize the line and store the tokens in a DFT struct 
-            {
-                t = 0; 
-                tokens[t] = strtok (dftLines[i]," /");
-                while ((tokens[t] != NULL) && (t < 9)) //after this look all 8 tokens should be in the tokens array
-                {
-                    t++; 
-                    tokens[t] = strtok (NULL, " /");
-                } //now we will use the tokens to fill in the attributes of a DFT struct in the data array
-                data[d]->weight = atof(tokens[0]); 
-                data[d]->op1 = tokens[1][0]; 
-                strcpy(data[d]->key1, tokens[2]); 
-                data[d]->n1 = atoi(tokens[3]); 
-                data[d]->op2 = tokens[4][0]; 
-                strcpy(data[d]->key2, tokens[5]); 
-                data[d]->n2 = atoi(tokens[6]); 
-                data[d]->energy = atof(tokens[7]);
-                d++; 
-            }
-        }
-    }
-    else 
-    {
-        printf("Error: file not found"); 
-        exit(1);
-    }
-    char ** dftLines = (char **)malloc(31 * sizeof(char *));  //create some temporary arrays to store input from the file 
-    char ** tokens = (char **) malloc(9 * sizeof(char *));
-    for(i = 0; i < 31; i++) 
-    {
-        free(dftLines[i]); 
-    }
-    free(dftLines); 
-    for(t = 0; t < 9; t++) 
-    {
-        free(tokens[t]);    
-    }
-    free(tokens); 
- 
 }
 
 void getFitness(ParSet * p)
@@ -238,7 +168,7 @@ void geneticOperations() //This will coordinate and call crossover and mutate
           {
               pars[r]->mutate = 1.0; //Mark that this individual has been mutated
               //pars[100 + numMutated] = mutate(pars[r]; //add newly mutated child to the end of the array
-              initializeParSet(100 + numMutated, id++); 
+              initializeParSet(pars[100 + numMutated], id++);
               numMutated ++;
           }
       }
@@ -258,34 +188,33 @@ void geneticOperations() //This will coordinate and call crossover and mutate
 
 void printResults() //will be used to print the results at the end of the function
 {
-  
+
 }
 
-void freeAll() //this function is called at the end, and frees all global arrays 
+void freeAll() //this function is called at the end, and frees all global arrays
 {
     pars = (ParSet**) malloc(200 * sizeof(ParSet *));
     for(i = 0; i < 100; i++)
     {
-        free(pars[i]); 
+        free(pars[i]);
     }
-    free(pars); 
-    for(i = 0; i < 8; i++) 
+    free(pars);
+    for(i = 0; i < 8; i++)
     {
-        free(tournament[i]);  
+        free(tournament[i]);
     }
-    free(tournament); 
+    free(tournament);
     for(i = 0; i < 24; i++)
     {
-        free(data[i]); 
+        free(data[i]);
     }
-    free(data); 
+    free(data);
 }
 
 
 int main(int argc, char** argv) {
     //Step 1. Get initial parameters
     initialParameters(pars); //we will make a ParSet array p, and populate it with initial parameters
-    getDFTData();
     //Step 2. Enter loop
     gettimeofday(&t1, NULL);
     while(currentBest != oldBest)
@@ -300,15 +229,16 @@ int main(int argc, char** argv) {
         }
         currentBest = pars[0];
     }
-    //simplex(); 
+    //simplex();
     gettimeofday(&t2, NULL);
     elapsedTime = (t2.tv_sec - t1.tv_sec) * 1000.0;
     elapsedTime += (t2.tv_usec - t1.tv_usec) / 1000.0;
     getrusage(RUSAGE_SELF, &memUsed);
-    printResults(); 
-    freeAll(); 
+    printResults();
+    freeAll();
     printf("Exitting");
     return 0;
 }
+
 
 
