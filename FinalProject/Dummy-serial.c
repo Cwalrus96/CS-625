@@ -20,7 +20,7 @@ int id; //keeps track of the id for new ParSet individuals
 struct timeval t1, t2; //used for measuring time intervals
 struct rusage memUsed;
 int mutateMax;
-long elapsedTime;
+float elapsedTime;
 
 //https://github.com/Cwalrus96/CS-625
 //Step 1 - Initial parameters pulled from the Cobalt-Cobalt bonds in Table 1 of the paper
@@ -39,7 +39,7 @@ void initialParameters() //This will create the original 100 parameter sets
     tournament = (ParSet **) malloc(8 * sizeof(ParSet*));
 }
 
-void getFitness(ParSet * p)
+float getFitness(ParSet * p)
 {
     int rando; 
     for(i = 0; i < 10000; i++) 
@@ -207,7 +207,7 @@ void printResults() //will be used to print the results at the end of the functi
     printf("A = %f \n", pars[0]->a); 
     printf("ID = %f \n", pars[0]->id); 
     printf("Error = %f \n", pars[0]->error); 
-    printf("DATA, CORES, %d, TIME, %f, MEMORY, %ld \n", numCores, elapsedTime, memUsed.ru_maxrss);
+    printf("DATA, CORES, 1, TIME, %f, MEMORY, %ld \n", elapsedTime, memUsed.ru_maxrss);
 
 }
 
