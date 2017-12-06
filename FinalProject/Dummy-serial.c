@@ -30,41 +30,41 @@ float elapsedTime;
 
 void initialParameters() //This will create the original 100 parameter sets
 {
-    //printf("About to allocate memory for 200 ParSet Pointers \n");
+    //printf("About to allocate memory for 200 ParSet Pointers \n"); 
     pars = (ParSet**) malloc(200 * sizeof(ParSet *));
-    //printf("About to initialize each individual ParSet pointer \n");
-    for(i = 0; i < 200; i++)
+    //printf("About to initialize each individual ParSet pointer \n"); 
+    for(i = 0; i < 200; i++) 
     {
-        pars[i] = (ParSet *) malloc(sizeof(ParSet));
+	pars[i] = (ParSet *) malloc(sizeof(ParSet)); 
     }
-    //printf("About to populate first 100 parSets \n");
+    //printf("About to populate first 100 parSets \n"); 
     for(id = 0; id < 100; id++)
     {
         initializeParSet(pars[id], id);
     }
-    //printf("About to initialize the tournament array \n");
+    //printf("About to initialize the tournament array \n"); 
     tournament = (ParSet **) malloc(8 * sizeof(ParSet*));
-    //printf("About to initialize each individual in the tournament array \n");
-    for(i = 0; i < 8; i++)
+    //printf("About to initialize each individual in the tournament array \n"); 
+    for(i = 0; i < 8; i++) 
     {
-        tournament[i] = (ParSet *) malloc(sizeof(ParSet));
+	tournament[i] = (ParSet *) malloc(sizeof(ParSet)); 
     }
-}
+}	
 
 float  getFitness(ParSet * p)
 {
-    float randf;
-    //printf("Wasting time... \n");
-    for(j = 0; j < 10000; j++)
+    float randf; 
+    //printf("Wasting time... \n"); 
+    for(j = 0; j < 1000000; j++) 
     {
-    //  for(j = 0; j < 100000; j++)
-    //  {
-            randf = rand();
-   ///  }
+    //	for(j = 0; j < 100000; j++) 
+    //	{
+            randf = rand(); 
+   ///	}
     }
-    //printf("Done wasting time \n");
+    //printf("Done wasting time \n"); 
     randf = randf / RAND_MAX;
-    //printf("Randf = %f \n", randf);
+    //printf("Randf = %f \n", randf); 
     return randf;
 }
 
@@ -72,36 +72,38 @@ void getFitnessAll(ParSet ** p, int setID) //This function will get the fitness 
 {
     if(setID == 0) //0 means get fitness for first 100 ParSets
     {
-        //printf("Finding fitness of first 100 individuals \n");
+        //printf("Finding fitness of first 100 individuals \n"); 
         for(i = 0; i < 100; i++)
         {
-            pars[i]->error = getFitness(pars[i]);
-            //printf("%f \n", pars[i]->error);
+	    if(pars[i]->error < 0) {
+            	pars[i]->error = getFitness(pars[i]);
+	        //printf("%f \n", pars[i]->error);
+	    }
         }
     }
     else if(setID == 1)
     {
-        //printf("Finding fitness of second 100 individuals \n");
+        //printf("Finding fitness of second 100 individuals \n"); 
         for(i = 100; i < 200; i++)
         {
             pars[i]->error = getFitness(pars[i]);
         }
     }
     else {
-        //printf("Something is wrong! We shouldn't have entered this branch!");
+	//printf("Something is wrong! We shouldn't have entered this branch!"); 
     }
 }
 
 int parSetComparator(const void * a, const void * b) //this function will be used to sort based on fitness
 {
-    ParSet ** par1 = (ParSet **) a;
+    ParSet ** par1 = (ParSet **) a; 
     ParSet ** par2 = (ParSet **) b;
-    ParSet * par3 = *par1;
-    ParSet * par4 = *par2;
+    ParSet * par3 = *par1; 
+    ParSet * par4 = *par2; 
     float x = par3->error;
-    //printf("X: %f \n", x);
+    //printf("X: %f \n", x); 
     float y = par4->error;
-    //printf("Y: %f \n", y);
+    //printf("Y: %f \n", y); 
     if(x < y) return -1;
     else if (x > y) return 1;
     else return 0;
@@ -110,39 +112,39 @@ int parSetComparator(const void * a, const void * b) //this function will be use
 //setID tells which parSets to rank - 0 is pars, 1 is tournament
 void rankParSets(ParSet ** p, int setID)
 {
-    //printf("About to rank the ParSets \n");
+    //printf("About to rank the ParSets \n"); 
     if(setID == 0)
     {
         qsort(p, 200 , sizeof(ParSet *), parSetComparator);
     }
     else if(setID == 1)
     {
-        //printf("SetID of 1 means we will be ranking the Tournament array \n");
+        //printf("SetID of 1 means we will be ranking the Tournament array \n"); 
         qsort(p, 8, sizeof(ParSet *), parSetComparator);
-        //printf("Done sorting array \n");
+	//printf("Done sorting array \n"); 
     }
 }
 
 ParSet * tournamentSelect() //This function will be used to select individuals for crossover
 {
     int numSelected = 0;
-    //printf("Selecting a tournament of 8 individuals \n");
+    //printf("Selecting a tournament of 8 individuals \n"); 
     while(numSelected < 8)  //For now, do a tournament of 8 different individuals
     {
         r = rand();
         r = r % 100;
-        //printf("choosing a random individual who hasn't yet been selected: Number %d \n", r);
+	//printf("choosing a random individual who hasn't yet been selected: Number %d \n", r); 
         if(pars[r]->selected == 0.0)
         {
             tournament[numSelected] = pars[r];
             tournament[numSelected]->selected = 1.0;
-            numSelected++;
+	    numSelected++; 
         }
-        //printf("numSelected: %d \n", numSelected);
+	//printf("numSelected: %d \n", numSelected); 
     }
-    //printf("Exitting while loop \n");
+    //printf("Exitting while loop \n"); 
     //Sort the selected individuals, and return the top 1;
-    //printf("Now about to rank the individuals \n");
+    //printf("Now about to rank the individuals \n"); 
     rankParSets(tournament,1);
     int j;
     for(j = 0; j < 8; j++)
@@ -205,7 +207,7 @@ void geneticOperations() //This will coordinate and call crossover and mutate
       //    pars[i]->mutate = 0.0;
       //}
       //Step 2: Need to randomly choose 10 individuals to undergo mutation
-      //printf("Starting mutation. Number to undergo mutation is %d \n", mutateMax);
+      //printf("Starting mutation. Number to undergo mutation is %d \n", mutateMax); 
       while(numMutated < mutateMax)
       {
         //  r = rand(); //get a random number, then reduce it to the range 0 - 99
@@ -218,15 +220,15 @@ void geneticOperations() //This will coordinate and call crossover and mutate
               numMutated ++;
         //  }
       }
-      //printf("Now moving on to crossover operation \n");
+      //printf("Now moving on to crossover operation \n"); 
       //Step 3: Perform crossover operation 45 times to get 90 new child individuals
       for(i = 0; i < (100 - mutateMax); i+=2)
       {
-          //printf("Selecting the first individual for crossover \n");
+      	  //printf("Selecting the first individual for crossover \n"); 
           ParSet * a = tournamentSelect(); //Use tournament select to get two good individuals for crossover
-          //printf("Selecting the second individual for crossover \n");
+	  //printf("Selecting the second individual for crossover \n"); 
           ParSet * b = tournamentSelect();
-          //printf("Performing the crossover operation \n");
+	  //printf("Performing the crossover operation \n"); 
           crossover(a, b); //crossover will return two new individuals, add them starting at 110th index
       }
 }
@@ -237,19 +239,19 @@ void geneticOperations() //This will coordinate and call crossover and mutate
 
 void printResults() //will be used to print the results at the end of the function
 {
-    printf("C = %f \n", pars[0]->c);
-    printf("D = %f \n", pars[0]->d);
-    printf("H = %f \n", pars[0]->h);
-    printf("Beta = %f \n", pars[0]->beta);
-    printf("Lambda2 = %f \n", pars[0]->lambda2);
-    printf("B = %f \n", pars[0]->b);
-    printf("R = %f \n", pars[0]->r);
-    printf("S = %f \n", pars[0]->s);
-    printf("Lambda1 = %f \n", pars[0]->lambda1);
-    printf("N = %f \n", pars[0]->n);
-    printf("A = %f \n", pars[0]->a);
-    printf("ID = %f \n", pars[0]->id);
-    printf("Error = %f \n", pars[0]->error);
+    printf("C = %f \n", pars[0]->c); 
+    printf("D = %f \n", pars[0]->d); 
+    printf("H = %f \n", pars[0]->h); 
+    printf("Beta = %f \n", pars[0]->beta); 
+    printf("Lambda2 = %f \n", pars[0]->lambda2); 
+    printf("B = %f \n", pars[0]->b); 
+    printf("R = %f \n", pars[0]->r); 
+    printf("S = %f \n", pars[0]->s); 
+    printf("Lambda1 = %f \n", pars[0]->lambda1); 
+    printf("N = %f \n", pars[0]->n); 
+    printf("A = %f \n", pars[0]->a); 
+    printf("ID = %f \n", pars[0]->id); 
+    printf("Error = %f \n", pars[0]->error); 
     printf("DATA, CORES, 1, TIME, %f, MEMORY, %ld \n", elapsedTime, memUsed.ru_maxrss);
 
 }
@@ -271,44 +273,45 @@ void freeAll() //this function is called at the end, and frees all global arrays
 
 int main(int argc, char** argv) {
     //Step 1. Get initial parameters
-    //printf("About to initialize parameters \n");
+    //printf("About to initialize parameters \n"); 
     initialParameters(pars); //we will make a ParSet array p, and populate it with initial parameters
-    //printf("Initial parameters initialized \n");
+    //printf("Initial parameters initialized \n"); 
     //Step 2. Enter loop
     gettimeofday(&t1, NULL);
-    //printf("Entering while loop with 1st generation \n");
-    currentBest = pars[0];
-    oldBest = pars[1];
-    int numGens = 0;
-    while((currentBest != oldBest) && (numGens < 100))
+    //printf("Entering while loop with 1st generation \n"); 
+    currentBest = pars[1]; 
+    oldBest = pars[0]; 
+    //int numGens = 0; 
+    while((currentBest != oldBest) )//&& (numGens < 100))
     {
-        //printf("About to get fitness for first 100 individuals \n");
+    	//printf("About to get fitness for first 100 individuals \n");
         getFitnessAll(pars,0);
-        //printf("About to perform genetic operations \n");
+	//printf("About to perform genetic operations \n"); 
         geneticOperations();
-        //printf("About to calculate fitness for newly generated individuals \n");
+	//printf("About to calculate fitness for newly generated individuals \n"); 
         getFitnessAll(pars, 1);
-        //printf("About to rank the parSets \n");
+	//printf("About to rank the parSets \n"); 
         rankParSets(pars,0);
-        //printf("Checking for convergence \n");
+	//printf("Checking for convergence \n"); 
         if(currentBest != NULL)
         {
             oldBest = currentBest;
         }
         currentBest = pars[0];
-        numGens ++;
+	printf("OldBest = %f, %f, newBest = %f, %f \n", oldBest->error, oldBest->id, currentBest->error, currentBest->id);
+	
+//	numGens ++; 
     }
-    //printf("Exitting while loop \n");
+    //printf("Exitting while loop \n"); 
     //simplex();
     gettimeofday(&t2, NULL);
     elapsedTime = (t2.tv_sec - t1.tv_sec) * 1000.0;
     elapsedTime += (t2.tv_usec - t1.tv_usec) / 1000.0;
     getrusage(RUSAGE_SELF, &memUsed);
-    //printf("Printing results \n");
+    //printf("Printing results \n"); 
     printResults();
-    //printf("Freeing allocated memory \n");
+    //printf("Freeing allocated memory \n"); 
     freeAll();
     //printf("Exitting");
     return 0;
 }
-
