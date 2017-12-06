@@ -6,7 +6,8 @@
 #include<sys/time.h>
 #include<sys/resource.h>
 #include "ParSet.h"
-#include "DFT.h" 
+#include "DFT.h"
+#include<mpi.h>
 
 //Global Variables
 ParSet ** pars; //This variable will hold the array of parameter sets
@@ -20,11 +21,12 @@ int id; //keeps track of the id for new ParSet individuals
 struct timeval t1, t2; //used for measuring time intervals
 struct rusage memUsed; //Keeps track of memory usage
 int mutateMax; //Can be used to adjust the rate of mutation
-int numCores, rank; 
-int exit = 0; //Used to control while loops
+int numCores, rank;
+int exitLoop = 0; //Used to control while loops
 int source, tag, jobNumber;
-ParSet * job; 
+ParSet * job;
 MPI_Status stat;
+long elapsedTime;
 
 //https://github.com/Cwalrus96/CS-625
 //Step 1 - Initial parameters pulled from the Cobalt-Cobalt bonds in Table 1 of the paper
@@ -43,76 +45,6 @@ void initialParameters() //This will create the original 100 parameter sets
     tournament = (ParSet **) malloc(8 * sizeof(ParSet*));
 }
 
-void getDFTData() //This function will read in the DFT data from a file and save it somewhere
-{
-    data = (DFT **) malloc(24 * sizeof(DFT *));
-    char ** dftLines = (char **)malloc(31 * sizeof(char *));  //create some temporary arrays to store input from the file 
-    char ** tokens = (char **) malloc(9 * sizeof(char *));
-    int t; 
-    int d; 
-    for(i = 0; i < 31; i++) 
-    {
-        dftLines[i] = (char *) malloc(100 * sizeof(char)); 
-    }
-    for(t = 0; t < 9; t++) 
-    {
-        tokens[t] = (char *) malloc(20 * sizeof(char));    
-    }
-    for(d = 0; d < 24; d++) 
-    {
-        data[d] = (DFT *) malloc(sizeof(DFT));    
-    }
-    FILE * file; 
-    if ((file = fopen("trainset.in", "r")) != NULL) 
-    {
-        i = 0; 
-        d = 0; 
-        while((i < 31) && (fgets(dftLines[i], 100, file) != NULL)) // Read all lines from the file and store them in the dftLines array
-        {
-            fputs ( line, stdout ); /* write the line */
-        }
-        for(i = 0; i < 31; i++) 
-        {
-            if(dftLines[i][0] == ' ') //Starting with a space means it is a data line. tokenize the line and store the tokens in a DFT struct 
-            {
-                t = 0; 
-                tokens[t] = strtok (dftLines[i]," /");
-                while ((tokens[t] != NULL) && (t < 9)) //after this look all 8 tokens should be in the tokens array
-                {
-                    t++; 
-                    tokens[t] = strtok (NULL, " /");
-                } //now we will use the tokens to fill in the attributes of a DFT struct in the data array
-                data[d]->weight = atof(tokens[0]); 
-                data[d]->op1 = tokens[1][0]; 
-                strcpy(data[d]->key1, tokens[2]); 
-                data[d]->n1 = atoi(tokens[3]); 
-                data[d]->op2 = tokens[4][0]; 
-                strcpy(data[d]->key2, tokens[5]); 
-                data[d]->n2 = atoi(tokens[6]); 
-                data[d]->energy = atof(tokens[7]);
-                d++; 
-            }
-        }
-    }
-    else 
-    {
-        printf("Error: file not found"); 
-        exit(1);
-    }
-    char ** dftLines = (char **)malloc(31 * sizeof(char *));  //create some temporary arrays to store input from the file 
-    char ** tokens = (char **) malloc(9 * sizeof(char *));
-    for(i = 0; i < 31; i++) 
-    {
-        free(dftLines[i]); 
-    }
-    free(dftLines); 
-    for(t = 0; t < 9; t++) 
-    {
-        free(tokens[t]);    
-    }
-    free(tokens); 
- 
-}
 
 void getFitness(ParSet * p)
 {
@@ -226,7 +158,7 @@ void geneticOperations() //This will coordinate and call crossover and mutate
           {
               pars[r]->mutate = 1.0; //Mark that this individual has been mutated
               //pars[100 + numMutated] = mutate(pars[r]; //add newly mutated child to the end of the array
-              initializeParSet(100 + numMutated, id++); 
+              initializeParSet(pars[100 + numMutated], id++);
               numMutated ++;
           }
       }
@@ -246,23 +178,23 @@ void geneticOperations() //This will coordinate and call crossover and mutate
 
 void distributeJobs() //This function will be called once per generation by Rank 0, distributing jobs to all other processes
 {
-    int jobRequest; 
-    jobNumber = 0; 
+    int jobRequest;
+    jobNumber = 0;
     while((pars[jobNumber]->error > 0) && (jobNumber < 100)) //Dont send out individuals if fitness has already been calculated
     {
         jobNumber++;
     }
-    while(jobNumber < 100) //Send out jobs until end is reached 
+    while(jobNumber < 100) //Send out jobs until end is reached
     {
         MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &stat);
-        source = stat.MPI_SOURCE; 
+        source = stat.MPI_SOURCE;
         tag = stat.MPI_TAG;
         if(tag == 200) //tag of 200 is a job request - send out next job
         {
             MPI_Recv(&jobRequest, 1, MPI_INT, source, 200, MPI_COMM_WORLD, &stat); //Recieve a job request
             //ParSet struct is a contiguous array of floats. Use address of first element as pointer
             MPI_Send(&(pars[jobNumber]->error), 14, MPI_FLOAT, source, jobNumber, MPI_COMM_WORLD);
-            jobNumber ++; 
+            jobNumber ++;
             while((pars[jobNumber]->error > 0) && (jobNumber < 100)) //Dont send out individuals if fitness has already been calculated
             {
                 jobNumber++;
@@ -271,28 +203,28 @@ void distributeJobs() //This function will be called once per generation by Rank
         else //Other tags mean they are sending completed job
         {
             //update ParSet array with newly completed job
-            MPI_Recv(&(pars[tag]->error), 14, MPI_FLOAT, source, tag, MPI_COMM_WORLD, &stat);       
+            MPI_Recv(&(pars[tag]->error), 14, MPI_FLOAT, source, tag, MPI_COMM_WORLD, &stat);
         }
     }
     geneticOperations();
-    while(jobNumber < 200) //Send out jobs until end is reached 
+    while(jobNumber < 200) //Send out jobs until end is reached
     {
         MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &stat);
-        source = stat.MPI_SOURCE; 
+        source = stat.MPI_SOURCE;
         tag = stat.MPI_TAG;
         if(tag == 200) //tag of 200 is a job request - send out next job
         {
             MPI_Recv(&jobRequest, 1, MPI_INT, source, 200, MPI_COMM_WORLD, &stat); //Recieve a job request
             //ParSet struct is a contiguous array of floats. Use address of first element as pointer
             MPI_Send(&(pars[jobNumber]->error), 14, MPI_FLOAT, source, jobNumber, MPI_COMM_WORLD);
-            jobNumber ++; 
+            jobNumber ++;
         }
         else //Other tags mean they are sending completed job
         {
             //update ParSet array with newly completed job
-            MPI_Recv(&(pars[tag]->error), 14, MPI_FLOAT, source, tag, MPI_COMM_WORLD, &stat);       
+            MPI_Recv(&(pars[tag]->error), 14, MPI_FLOAT, source, tag, MPI_COMM_WORLD, &stat);
         }
-    }  
+    }
     rankParSets(pars,0);
     if(currentBest != NULL) //Update oldBest and currentBest
     {
@@ -301,50 +233,51 @@ void distributeJobs() //This function will be called once per generation by Rank
     currentBest = pars[0];
     if(oldBest == currentBest) //If they still match, this is the exit condition. Program is done
     {
-       exit = 1; 
+       exitLoop = 1;
     }
 }
 
-void requestJobs() //This function will be called by all worker processes until they recieve a signal to move on 
+void requestJobs() //This function will be called by all worker processes until they recieve a signal to move on
+
 {
-    //Send MPI message asking for a job 
-    MPI_Send(1, 1, MPI_INT, 0, 200, MPI_COMM_WORLD); //Send message to root asking for job (tag 200 is job request);
-    MPI_Recv(&(job->error), 14, MPI_FLOAT, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &stat); //Recieve job into the Job ParSet;  
-    jobNumber = stat.MPI_TAG; 
-    if(jobNumber < 200) 
+    //Send MPI message asking for a job
+    MPI_Send(&rank, 1, MPI_INT, 0, 200, MPI_COMM_WORLD); //Send message to root asking for job (tag 200 is job request);
+    MPI_Recv(&(job->error), 14, MPI_FLOAT, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &stat); //Recieve job into the Job ParSet;
+    jobNumber = stat.MPI_TAG;
+    if(jobNumber < 200)
     {
-        getFitness(job); 
-        MPI_Send(&(job->error), 14, MPI_FlOAT, 0, jobNumber, MPI_COMM_WORLD); //Send completed job back to root; 
+        getFitness(job);
+        MPI_Send(&(job->error), 14, MPI_FLOAT, 0, jobNumber, MPI_COMM_WORLD); //Send completed job back to root;
     }
-    else 
+    else
     {
-        exit = 1;    
+        exitLoop = 1;
     }
 }
 
 void printResults() //will be used to print the results at the end of the function
 {
-  
+
 }
 
-void freeAll() //this function is called at the end, and frees all global arrays 
+void freeAll() //this function is called at the end, and frees all global arrays
 {
     pars = (ParSet**) malloc(200 * sizeof(ParSet *));
     for(i = 0; i < 100; i++)
     {
-        free(pars[i]); 
+        free(pars[i]);
     }
-    free(pars); 
-    for(i = 0; i < 8; i++) 
+    free(pars);
+    for(i = 0; i < 8; i++)
     {
-        free(tournament[i]);  
+        free(tournament[i]);
     }
-    free(tournament); 
+    free(tournament);
     for(i = 0; i < 24; i++)
     {
-        free(data[i]); 
+        free(data[i]);
     }
-    free(data); 
+    free(data);
 }
 
 
@@ -352,43 +285,39 @@ int main(int argc, char** argv) {
     //Step 1. Initialize MPI
     MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD, &numCores);
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);  
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     //Step 2. Get initial parameters
-    if(rank == 0) 
+    if(rank == 0)
     {
         initialParameters(pars); //we will make a ParSet array p, and populate it with initial parameters
-        getDFTData();
         gettimeofday(&t1, NULL);
     }
     //Step 3 - while loop
-        //a. Rank 0 will distribute fitness jobs to the other processes until exit condition is met 
+        //a. Rank 0 will distribute fitness jobs to the other processes until exit condition is met
     if(rank == 0)
     {
-        while(exit != 1)  
+        while(exitLoop != 1)
         {
-            distributeJobs(); 
+            distributeJobs();
         }
-        //simplex(); 
+        //simplex();
         gettimeofday(&t2, NULL);
         elapsedTime = (t2.tv_sec - t1.tv_sec) * 1000.0;
         elapsedTime += (t2.tv_usec - t1.tv_usec) / 1000.0;
         getrusage(RUSAGE_SELF, &memUsed);
-        printResults(); 
-        freeAll(); 
-        MPI_Finalize(); 
+        printResults();
+        freeAll();
+        MPI_Finalize();
         printf("Exitting");
     }
     else
-    {  
-        job = (ParSet *) malloc(sizeof(ParSet)); 
-        while(exit != 1) 
+    {
+        job = (ParSet *) malloc(sizeof(ParSet));
+        while(exitLoop != 1)
         {
-            requestJobs();    
+            requestJobs();
         }
-        free(job);    
+        free(job);
     }
     return 0;
 }
-
-
-
