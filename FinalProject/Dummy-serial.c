@@ -41,6 +41,13 @@ void initialParameters() //This will create the original 100 parameter sets
 
 void getFitness(ParSet * p)
 {
+    int rando; 
+    for(i = 0; i < 10000; i++) 
+    {
+          rando = rand();  
+    }
+    float randf = rando / RAND_MAX; 
+    return randf; 
 
 }
 
@@ -187,6 +194,20 @@ void geneticOperations() //This will coordinate and call crossover and mutate
 
 void printResults() //will be used to print the results at the end of the function
 {
+    printf("C = %f \n", pars[0]->c); 
+    printf("D = %f \n", pars[0]->d); 
+    printf("H = %f \n", pars[0]->h); 
+    printf("Beta = %f \n", pars[0]->beta); 
+    printf("Lambda2 = %f \n", pars[0]->lambda2); 
+    printf("B = %f \n", pars[0]->b); 
+    printf("R = %f \n", pars[0]->r); 
+    printf("S = %f \n", pars[0]->s); 
+    printf("Lambda1 = %f \n", pars[0]->lambda1); 
+    printf("N = %f \n", pars[0]->n); 
+    printf("A = %f \n", pars[0]->a); 
+    printf("ID = %f \n", pars[0]->id); 
+    printf("Error = %f \n", pars[0]->error); 
+    printf("DATA, CORES, %d, TIME, %f, MEMORY, %ld \n", numCores, elapsedTime, memUsed.ru_maxrss);
 
 }
 
