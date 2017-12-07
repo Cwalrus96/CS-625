@@ -67,7 +67,7 @@ char * writeTersoffFile(ParSet * p)
     //First, build file name string
     char* tersoffFile = (char *) malloc(21 * sizeof(char));  //Building a file name to hold the parameter set
     char* idString = (char *) malloc(7 * sizeof(char)); //idString holds a string representation of the ParSet id
-    sprintf(idString, "%f", p->id);
+    sprintf(idString, "%d",(int) p->id);
     strcat(tersoffFile, "pt");
     strcat(tersoffFile, idString);
     strcat(tersoffFile, ".tersoff"); //tersoffFile now holds the name of a file for this individual's parameters
@@ -81,37 +81,48 @@ char * writeTersoffFile(ParSet * p)
     //add c to paramString
     char * param = (char *) malloc(11 * sizeof(char));
     sprintf(param, "10%f", p->c);
-    strcat(paramString, param);
+    strcat(paramString, param);j
+    strcat(paramString, " "); 
     //add d
     sprintf(param, "10%f", p->d);
     strcat(paramString, param);
+    strcat(paramString, " ");
     //add  h
     sprintf(param, "10%f", p->h);
     strcat(paramString, param);
+    strcat(paramString, " ");
     //add n
     sprintf(param, "10%f", p->n);
     strcat(paramString, param);
+    strcat(paramString, " ");
     //add beta
     sprintf(param, "10%f", p->beta);
     strcat(paramString, param);
+    strcat(paramString, " ");
     //add lambda2
     sprintf(param, "10%f", p->lambda2);
     strcat(paramString, param);
+    strcat(paramString, " ");
     //add b
     sprintf(param, "10%f", p->b);
     strcat(paramString, param);
+    strcat(paramString, " ");
     //add r
     sprintf(param, "10%f", p->r);
     strcat(paramString, param);
+    strcat(paramString, " ");
     //add s
     sprintf(param, "10%f", p->s);
     strcat(paramString, param);
+    strcat(paramString, " ");
     //add lambda1
     sprintf(param, "10%f", p->lambda1);
     strcat(paramString, param);
+    strcat(paramString, " ");
     //finally, add a
     sprintf(param, "10%f", p->a);
     strcat(paramString, param);
+    strcat(paramString, " ");
 
     printf("%s \n", paramString);
 
