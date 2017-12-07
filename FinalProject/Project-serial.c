@@ -81,7 +81,7 @@ char * writeTersoffFile(ParSet * p)
     //add c to paramString
     char * param = (char *) malloc(11 * sizeof(char));
     sprintf(param, "10%f", p->c);
-    strcat(paramString, param);j
+    strcat(paramString, param);
     strcat(paramString, " "); 
     //add d
     sprintf(param, "10%f", p->d);
