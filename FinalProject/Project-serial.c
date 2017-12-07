@@ -163,6 +163,7 @@ float getPotential(char * geo, char * paramFile)
     strcat(commandString, "atom_style\tcharge\n");
     strcat(commandString, "read_data\t");
     strcat(commandString, geo);
+    strcat(commandString, "\n"); 
     strcat(commandString, "pair_style\ttersoff\n");
     strcat(commandString, "pair_coeff\t* * ");
     strcat(commandString, paramFile);
