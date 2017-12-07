@@ -1,23 +1,20 @@
-(I copied Nasser's instructions on how to compile Simple.c, will edit this file to contain instructions on compiling the project files) 
+TO COMPILE PROJECT: 
 
-compile using these 2 lines:
+1. Compile lammps as a shared library 
+    a. navigate to the lammps source directory and use one of the following lines 
+     
+    make serial mode=shlib  
+            or 
+    make mpi mode=shlib 
+    
+    Those lines will take a while to run, and will create a .so file which represents either a serial or mpi version of the lammps library. 
+    
+2. Add the address of lammps to the library path using the follow code 
 
-gcc -I/homes/moonknight/proj/lammps/src -c simple.c
-gcc -L/homes/moonknight/proj/lammps/src simple.o \
-   -llammps -lfftw -lmpi  -lpthread -lstdc++ -o simpleC
-   
-the path should be where you have the LAMMPS library: liblammps.so
-you might need to rename ur compiled library to liblammps.so from what ever it was
+    export LD_LIBRARY_PATH=/homes/moonknight/proj/lammps/src
+    
+    (make sure to adjust the path to point to your lammps .so file) 
+    
+    
+3. Edit the makefile so that the references point to your shared lammps library file, then use the make command to compile 
 
-before runing the file you need to add the library to library paths for linux cmd. you do that like this:
-
-export LD_LIBRARY_PATH=/homes/moonknight/proj/lammps/src
-
-again this should point to the path where you have ur compiled lammps library liblammps.so
-
-after that you can ran the file using this command:
-
-mpirun -np 1 simpleC 1 in.lj
-
-first number is the number of mpi processes you want to use second number is howmany processes you want LAMMPS to use 
-( it can't be more than the mpi processes) and the in.lj is the name of the file you want to run
