@@ -5,8 +5,10 @@
 #include <math.h>
 #include<sys/time.h>
 #include<sys/resource.h>
+#include<math.h>
 #include "ParSet.h"
 #include "DFT.h"
+#include "unistd.h"
 #include "library.h" //LAMMPS library
 
 //Global Variables
@@ -24,7 +26,8 @@ float elapsedTime;
 void * lmps; 
 const float PTBCC = -275.046; 
 const float PTBCC93 = -241.4031493; 
-const float weight = 5.0; 
+const float weight = 5.0;
+File * file; 
 
 //https://github.com/Cwalrus96/CS-625
 //Step 1 - Initial parameters pulled from the Cobalt-Cobalt bonds in Table 1 of the paper
@@ -57,15 +60,111 @@ void initialParameters() //This will create the original 100 parameter sets
     lammps_open_no_mpi(0, NULL, &lmps) //Initialize LAMMPS pointer
 }	
 
-float getPotential(ParSet *p, char * geo) 
+//This file will be called to create a .tersoff file containing the parameters of an individual ParSet
+char * writeTersoffFile(ParSet * p)
 {
-    char* tersoffFile = (char *) malloc(20 * sizeof(char));    
+    //First, build file name string
+    char* tersoffFile = (char *) malloc(21 * sizeof(char));  //Building a file name to hold the parameter set
+    char* idString = (char *) malloc(7 * sizeof(char)); //idString holds a string representation of the ParSet id 
+    sprintf(idString, "%d", p->id); 
+    strcat(tersoffFile, "pt"); 
+    strcat(tersoffFile, idString); 
+    strcat(tersoffFile, ".tersoff"); //tersoffFile now holds the name of a file for this individual's parameters 
+    
+    //c, d, costheta0 (h), n, beta, lambda2, B, R, D (s), lambda1, A
+    //Second, build atomic parameters string
+    char * paramString = (char *) malloc(200 * sizeof(char)); //paramString will hold the atomic parameters 
+    strcat(paramString, "Pt Pt Pt 3.0 1.0 0.0 "); 
+    //add c to paramString
+    char * param = (char *) malloc(11 * sizeof(char));
+    sprintf(param, "10%f", p->c); 
+    strcat(paramString, param); 
+    //add d    
+    sprintf(param, "10%f", p->d); 
+    strcat(paramString, param);
+    //add  h  
+    sprintf(param, "10%f", p->h); 
+    strcat(paramString, param);
+    //add n    
+    sprintf(param, "10%f", p->n); 
+    strcat(paramString, param);
+    //add beta      
+    sprintf(param, "10%f", p->beta); 
+    strcat(paramString, param);    
+    //add lambda2
+    sprintf(param, "10%f", p->lambda2); 
+    strcat(paramString, param);
+    //add b     
+    sprintf(param, "10%f", p->b); 
+    strcat(paramString, param); 
+    //add r
+    sprintf(param, "10%f", p->r); 
+    strcat(paramString, param);
+    //add s
+    sprintf(param, "10%f", p->s); 
+    strcat(paramString, param);
+    //add lambda1
+    sprintf(param, "10%f", p->lambda1); 
+    strcat(paramString, param);
+    //finally, add a
+    sprintf(param, "10%f", p->a); 
+    strcat(paramString, param);
+    
+    //Write the parameter string to the file specified in the tersoff file string, and close the file 
+    file = fopen(tersoffFile, "w"); 
+    fputs(paramString, file); 
+    fclose(file); 
+    free(tersoffFile); 
+    free(paramString); 
+    free(idString); 
+    free(param); 
+    return 
+    
+}
+
+//Call this function to calculate the tersoff potential for an individual. 
+//geo is a string that contains the name of a file. This file specifies the atomic geometry
+//paramFile is a .tersoff file that contains the parameters of a particular individual. 
+float getPotential(char * geo, char * paramFile) 
+{ 
+    //Use pipes to redirect stdout
+    int npipe[2];
+    pipe(npipe);
+    int saved_stdout = dup(STDOUT_FILENO);
+    dup2(npipe[1], STDOUT_FILENO);
+    close(npipe[1]);
+    
+    //Build a command string that sets up the geometry and parameters of the tersoff function for LAMMPS
+    char * commandString = (char *) malloc(sizeof(char) * 350);
+    strcat(commandString, "dimension\t3\n"); 
+    strcat(commandString, "log\tnone\n");
+    strcat(commandString, "echo\tnone\n"); 
+    strcat(commandString, "boundary\tp p p\n");
+    strcat(commandString, "units\treal\n"); 
+    strcat(commandString, "atom_style\tcharge\n");
+    strcat(commandString, "read_data\t");
+    strcat(commandString, geo);
+    strcat(commandString, "pair_style\ttersoff\n");
+    strcat(commandString, "pair_coeff\t* * ");
+    strcat(commandString, paramFile);
+    strcat(commandString, "neighbor\t2 bin\n");
+    strcat(commandString, "neigh_modify\tevery 10 delay 0 check no\n");
+    strcat(commandString, "minimize\t1.0e-4 1.0e-6 100 1000\n");
+    strcat(commandString, "timestep\t0.25\n");
+    
+    //Submit command to LAMMPS
+    lammps_commands_string(lmps, commandString); 
+    
+    
+   
 }
 
 float  getFitness(ParSet * p)
 {
-    float p1 = getPotential(p, "DataPtbcc.in"); 
-    float p2 = getPotential(p, "DataPtbcc93.in"); 
+    //start by creating and populating a .tersoff file containing all the parameters in p
+    char * paramFile = writeTersoffFile(p); 
+    float p1 = getPotential(p, "DataPtbcc.in", paramFile); //Get potential with two different geometries and compare them. (Can expand later)
+    float p2 = getPotential(p, "DataPtbcc93.in", paramFile); 
     float diff1 = p1 - p2;
     float diff2 = PTBCC - PTBCC93; 
     float diff3 = diff2 - diff1; 
