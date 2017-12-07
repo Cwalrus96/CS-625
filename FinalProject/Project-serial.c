@@ -6,6 +6,7 @@
 #include<sys/time.h>
 #include<sys/resource.h>
 #include<math.h>
+#include<string.h>
 #include "ParSet.h"
 #include "DFT.h"
 #include "unistd.h"
@@ -71,6 +72,8 @@ char * writeTersoffFile(ParSet * p)
     strcat(tersoffFile, idString); 
     strcat(tersoffFile, ".tersoff"); //tersoffFile now holds the name of a file for this individual's parameters 
     
+    printf("%s \n", tersoffFile); 
+    
     //c, d, costheta0 (h), n, beta, lambda2, B, R, D (s), lambda1, A
     //Second, build atomic parameters string
     char * paramString = (char *) malloc(200 * sizeof(char)); //paramString will hold the atomic parameters 
@@ -110,6 +113,8 @@ char * writeTersoffFile(ParSet * p)
     sprintf(param, "10%f", p->a); 
     strcat(paramString, param);
     
+    printf("%s \n", paramString); 
+    
     //Write the parameter string to the file specified in the tersoff file string, and close the file 
     file = fopen(tersoffFile, "w"); 
     fputs(paramString, file); 
@@ -127,6 +132,9 @@ char * writeTersoffFile(ParSet * p)
 //paramFile is a .tersoff file that contains the parameters of a particular individual. 
 float getPotential(char * geo, char * paramFile) 
 { 
+    printf("%s \n", geo); 
+    char* buf = (char *) malloc(sizeof(char) * 2848);	
+	
     //Use pipes to redirect stdout
     int npipe[2];
     pipe(npipe);
@@ -152,10 +160,43 @@ float getPotential(char * geo, char * paramFile)
     strcat(commandString, "minimize\t1.0e-4 1.0e-6 100 1000\n");
     strcat(commandString, "timestep\t0.25\n");
     
+    printf("%s \n", commandString); 
+    
     //Submit command to LAMMPS
-    lammps_commands_string(lmps, commandString); 
+    lammps_commands_string(lmps, commandString);
     
+    //Read standardOutput into buffer
+    read(npipe[0], buf, sizeof(buf));
     
+    //Run LAMMPS simulation 1 time 
+    lammps_command(lmps, "run\t1\n");
+
+    read(npipe[0], buf, sizeof(buf));
+
+    dup2(saved_stdout, STDOUT_FILENO);
+    
+    printf("%s \n", buf); 
+
+    lammps_command(lmps, "clear\n");
+
+    /**std::stringstream ss;
+    ss.str(buf);
+    std::string line;
+    double etotal;
+
+    for ( int i = 0; i < 8; i++ )
+    {
+        std::getline( ss, line );
+    }
+
+    for ( int i = 0; i < 5; i++ )
+    {
+         ss >> etotal;
+    }
+**/
+    return (rand() / RAND_MAX);
+}
+
    
 }
 
