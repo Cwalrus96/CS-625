@@ -70,7 +70,7 @@ char * writeTersoffFile(ParSet * p)
     sprintf(idString, "%d",(int) p->id);
     strcat(tersoffFile, "pt");
     strcat(tersoffFile, idString);
-    strcat(tersoffFile, ".tersoff"); //tersoffFile now holds the name of a file for this individual's parameters
+    strcat(tersoffFile, ".tersoff Pt"); //tersoffFile now holds the name of a file for this individual's parameters
 
     printf("%s \n", tersoffFile);
 
@@ -130,11 +130,10 @@ char * writeTersoffFile(ParSet * p)
     file = fopen(tersoffFile, "w");
     fputs(paramString, file);
     fclose(file);
-    free(tersoffFile);
     free(paramString);
     free(idString);
     free(param);
-    return;
+    return tersoffFile;
 
 }
 
@@ -167,6 +166,7 @@ float getPotential(char * geo, char * paramFile)
     strcat(commandString, "pair_style\ttersoff\n");
     strcat(commandString, "pair_coeff\t* * ");
     strcat(commandString, paramFile);
+    strcat(commandString, "\n"); 
     strcat(commandString, "neighbor\t2 bin\n");
     strcat(commandString, "neigh_modify\tevery 10 delay 0 check no\n");
     strcat(commandString, "minimize\t1.0e-4 1.0e-6 100 1000\n");
