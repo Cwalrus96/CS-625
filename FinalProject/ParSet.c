@@ -1,26 +1,35 @@
 #include "ParSet.h"
 
 
-initializeParSet(ParSet * p, int id) { //Initialize all parameters using base values +- 25%
-  p->c = RandomizeParameter(30611); 
-  p->d = RandomizeParameter(113.064); 
-  p->h = RandomizeParameter(0.5289); 
-  p->beta = RandomizeParameter(0.0426); 
-  p->n = RandomizeParameter(0.5916); 
-  p->lambda2 = RandomizeParameter(1.3484); 
-  p->b = RandomizeParameter(80.5297); 
-  p->r = RandomizeParameter(2.85); 
-  p->s = RandomizeParameter(3.25); 
-  p->lambda1 = RandomizeParameter(2.9699); 
-  p->a = RandomizeParameter(1017.1); 
-  p->id = id; 
-  p->error = -1.0; 
+void initializeParSet(ParSet * p, int id) {
+  p->c = randomizeParameter(30611);
+  p->d = randomizeParameter(113.064);
+  p->h = randomizeParameter(0.5289);
+  p->beta = randomizeParameter(0.0426);
+  p->n = randomizeParameter(0.5916);
+  p->lambda2 = randomizeParameter(1.3484);
+  p->b = randomizeParameter(80.5297);
+  p->r = randomizeParameter(2.85);
+  p->s = randomizeParameter(3.25);
+  p->lambda1 = randomizeParameter(2.9699);
+  p->a = randomizeParameter(1017.1);
+  p->id = id;
+  p->error = -1.0;
+  p->mutate = 0.0;
+  p-> selected = 0.0;
+  if(p->s > p->r) //s should be less than r - swap
+  {
+        float temp = p->s;
+        p->s = p->r;
+        p->r = temp;
+  }
 }
 
-randomizeParameter(float p) { //this function will take a base value as a parameter and adjust it randomly in the range of +-25%
-  float seed = rand(); 
-  float sign = (seed % 2 == 0) ? -1.0 : 1.0; 
-  seed = seed / RAND_MAX; 
-  float change = seed * 0.25 * sign; 
-  return (p + change); 
+float randomizeParameter(float p) {
+  float seed = rand();
+  float sign = (((int)seed) % 2 == 0) ? -1.0 : 1.0;
+  seed = seed / RAND_MAX;
+  float change = seed * 0.25 * sign;
+  change = p * change;
+  return (p + change);
 }
