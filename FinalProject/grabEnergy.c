@@ -22,7 +22,7 @@ double grabEnergy (char *fileName)
    {
 	if (strcmp("Energy",str1) ==0)
 	{
-		printf("Read String1 |%s|\n", str1 );	
+		//printf("Read String1 |%s|\n", str1 );	
 		int i = 0;
 		//skips bunch of string
 		for (i = 0; i < 4 ; i++)
