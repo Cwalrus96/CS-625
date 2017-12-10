@@ -60,6 +60,10 @@ void initialParameters() //This will create the original 100 parameter sets
         tournament[i] = (ParSet *) malloc(sizeof(ParSet));
     }
     lammps_open_no_mpi(0, NULL, &lmps);  //Initialize LAMMPS pointer
+    //for(i = 0; i < 100; i++)
+    //{
+//      printf("%d \n", (int) pars[i]->id);
+  //  }
     first = 0;
 }
 
@@ -69,12 +73,13 @@ char * writeTersoffFile(ParSet * p)
     //First, build file name string
     char* tersoffFile = (char *) malloc(21 * sizeof(char));  //Building a file name to hold the parameter set
     char* idString = (char *) malloc(7 * sizeof(char)); //idString holds a string representation of the ParSet id
+    //printf("ID~ %d \n",(int) p->id);
     sprintf(idString, "%d",(int) p->id);
-    strcat(tersoffFile, "Pt");
+    memcpy(tersoffFile, "Pt\0", 3 * sizeof(char));
     strcat(tersoffFile, idString);
     strcat(tersoffFile, ".tersoff\0"); //tersoffFile now holds the name of a file for this individual's parameters
 
-    //printf("%s \n", tersoffFile);
+    //printf("TERSOFF~ %s \n", tersoffFile);
 
     //c, d, costheta0 (h), n, beta, lambda2, B, R, D (s), lambda1, A
     //Second, build atomic parameters string
@@ -173,13 +178,17 @@ float getPotential(ParSet * p, char * geo, char * paramFile)
     char * commandString = (char *) malloc(sizeof(char) * 350);
     //if(first == 0)
     //{
+        char * logFile = (char *) malloc(20 * sizeof(char));
+        memcpy(logFile, "log\0", 4 * sizeof(char));
+        char * idString = (char *) malloc(7 * sizeof(char));
+        sprintf(idString, "%d", (int) p->id);
+        strcat(logFile, idString);
+        strcat(logFile, ".lammps\0");
+
         memcpy(commandString, "#clearing garbage \n \0",21 * sizeof(char) );
-        strcat(commandString, "log\tlog");
-//      char * idString = (char *) malloc(7 * sizeof(char));
-//      sprintf(idString, "%d", (int) p->id);
-//      strcat(commandString, idString);
-        strcat(commandString, ".lammps\n");
-        strcat(commandString, "echo\tscreen\n");
+        strcat(commandString, "log\t");
+        strcat(commandString, logFile);
+        strcat(commandString, "\necho\tscreen\n");
 //      first = 1;
 
         strcat(commandString, "boundary\tp p p\n");
@@ -245,7 +254,30 @@ float getPotential(ParSet * p, char * geo, char * paramFile)
     //free(idString);
     //lammps_free(lmps);
     //lammps_close(lmps);
-    return (rand() / RAND_MAX);
+    char * line = (char *) malloc(sizeof(char) * 1000);
+    file = fopen(logFile, "r");
+    double energy = 0.0;
+    while(fscanf(file, " %s", line) == 1)
+    {
+        if(strcmp("Energy", line) == 0)
+        {
+            for(j = 0; j < 4; j++)
+            {
+                fscanf(file, " %s", line);
+            }
+            fscanf(file, " %lf", &energy); //first energy
+            fscanf(file, " %lf", &energy); //second energy
+            fscanf(file, " %lf", &energy); //third energy
+
+            break;
+        }
+    }
+    free(line);
+    free(idString);
+    free(logFile);
+    fclose(file);
+    //printf("\n\n\n\n\n Energy: %f \n\n\n\n\n", energy);
+    return energy;
 }
 
 
@@ -261,6 +293,16 @@ float  getFitness(ParSet * p)
     float diff2 = PTBCC - PTBCC93;
     float diff3 = diff2 - diff1;
     float errorVal = pow(diff3, 2);
+    char * logFile = (char *)malloc(20 * sizeof(char));
+    memcpy(logFile, "log\0", 4 * sizeof(char));
+    char * idString = (char *) malloc(7 * sizeof(char));
+    sprintf(idString, "%d", (int) p->id);
+    strcat(logFile, idString);
+    strcat(logFile, ".lammps\0");
+    remove(logFile);
+    free(logFile);
+    free(idString);
+    remove(paramFile);
     free(paramFile);
     return errorVal / weight;
 }
@@ -269,7 +311,7 @@ void getFitnessAll(ParSet ** p, int setID) //This function will get the fitness 
 {
     if(setID == 0) //0 means get fitness for first 100 ParSets
     {
-        printf("Finding fitness of first 100 individuals \n");
+        //printf("Finding fitness of first 100 individuals \n");
         for(i = 0; i < 100; i++)
         {
             pars[i]->error = getFitness(pars[i]);
@@ -277,14 +319,14 @@ void getFitnessAll(ParSet ** p, int setID) //This function will get the fitness 
     }
     else if(setID == 1)
     {
-        printf("Finding fitness of second 100 individuals \n");
+        //printf("Finding fitness of second 100 individuals \n");
         for(i = 100; i < 200; i++)
         {
             pars[i]->error = getFitness(pars[i]);
         }
     }
     else {
-        printf("Something is wrong! We shouldn't have entered this branch!");
+        //printf("Something is wrong! We shouldn't have entered this branch!");
     }
 }
 
@@ -295,9 +337,9 @@ int parSetComparator(const void * a, const void * b) //this function will be use
     ParSet * par3 = *par1;
     ParSet * par4 = *par2;
     float x = par3->error;
-    printf("X: %f \n", x);
+    //printf("X: %f \n", x);
     float y = par4->error;
-    printf("Y: %f \n", y);
+    //printf("Y: %f \n", y);
     if(x < y) return -1;
     else if (x > y) return 1;
     else return 0;
@@ -306,39 +348,39 @@ int parSetComparator(const void * a, const void * b) //this function will be use
 //setID tells which parSets to rank - 0 is pars, 1 is tournament
 void rankParSets(ParSet ** p, int setID)
 {
-    printf("About to rank the ParSets \n");
+    //printf("About to rank the ParSets \n");
     if(setID == 0)
     {
         qsort(p, 200 , sizeof(ParSet *), parSetComparator);
     }
     else if(setID == 1)
     {
-        printf("SetID of 1 means we will be ranking the Tournament array \n");
+        //printf("SetID of 1 means we will be ranking the Tournament array \n");
         qsort(p, 8, sizeof(ParSet *), parSetComparator);
-        printf("Done sorting array \n");
+        //printf("Done sorting array \n");
     }
 }
 
 ParSet * tournamentSelect() //This function will be used to select individuals for crossover
 {
     int numSelected = 0;
-    printf("Selecting a tournament of 8 individuals \n");
+    //printf("Selecting a tournament of 8 individuals \n");
     while(numSelected < 8)  //For now, do a tournament of 8 different individuals
     {
         r = rand();
         r = r % 100;
-        printf("choosing a random individual who hasn't yet been selected: Number %d \n", r);
+        //printf("choosing a random individual who hasn't yet been selected: Number %d \n", r);
         if(pars[r]->selected == 0.0)
         {
             tournament[numSelected] = pars[r];
             tournament[numSelected]->selected = 1.0;
             numSelected++;
         }
-        printf("numSelected: %d \n", numSelected);
+        //printf("numSelected: %d \n", numSelected);
     }
-    printf("Exitting while loop \n");
+    //printf("Exitting while loop \n");
     //Sort the selected individuals, and return the top 1;
-    printf("Now about to rank the individuals \n");
+    //printf("Now about to rank the individuals \n");
     rankParSets(tournament,1);
     int j;
     for(j = 0; j < 8; j++)
@@ -467,45 +509,46 @@ void freeAll() //this function is called at the end, and frees all global arrays
 
 int main(int argc, char** argv) {
     //Step 1. Get initial parameters
-    printf("About to initialize parameters \n");
+    //printf("About to initialize parameters \n");
     initialParameters(pars); //we will make a ParSet array p, and populate it with initial parameters
-    printf("Initial parameters initialized \n");
+    //printf("Initial parameters initialized \n");
     //Step 2. Enter loop
     gettimeofday(&t1, NULL);
     //printf("Entering while loop with 1st generation \n");
     currentBest = pars[1];
     oldBest = pars[0];
     //int numGens = 0;
-    printf("About to get fitness for first 100 individuals \n");
+    //printf("About to get fitness for first 100 individuals \n");
     getFitnessAll(pars,0);
     while((currentBest != oldBest) )//&& (numGens < 100))
     {
-        printf("About to perform genetic operations \n");
+        //printf("About to perform genetic operations \n");
         geneticOperations();
-        printf("About to calculate fitness for newly generated individuals \n");
+        //printf("About to calculate fitness for newly generated individuals \n");
         getFitnessAll(pars, 1);
-        printf("About to rank the parSets \n");
+        //printf("About to rank the parSets \n");
         rankParSets(pars,0);
-        printf("Checking for convergence \n");
+        //printf("Checking for convergence \n");
         if(currentBest != NULL)
         {
             oldBest = currentBest;
         }
         currentBest = pars[0];
-        printf("OldBest = %f, %f, newBest = %f, %f \n", oldBest->error, oldBest->id, currentBest->error, currentBest->id);
+        //printf("OldBest = %f, %f, newBest = %f, %f \n", oldBest->error, oldBest->id, currentBest->error, currentBest->id);
 
 //      numGens ++;
     }
-    printf("Exitting while loop \n");
+    //printf("Exitting while loop \n");
     //simplex();
     gettimeofday(&t2, NULL);
     elapsedTime = (t2.tv_sec - t1.tv_sec) * 1000.0;
     elapsedTime += (t2.tv_usec - t1.tv_usec) / 1000.0;
     getrusage(RUSAGE_SELF, &memUsed);
-    printf("Printing results \n");
+    //printf("Printing results \n");
     printResults();
-    printf("Freeing allocated memory \n");
+    //printf("Freeing allocated memory \n");
     freeAll();
-    printf("Exitting");
+    lammps_close(lmps);
+    //printf("Exitting");
     return 0;
 }
