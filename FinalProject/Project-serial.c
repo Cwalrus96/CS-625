@@ -29,7 +29,7 @@ const float PTBCC = -275.046;
 const float PTBCC93 = -241.4031493;
 const float weight = 5.0;
 FILE * file;
-int first; 
+int first;
 
 //https://github.com/Cwalrus96/CS-625
 //Step 1 - Initial parameters pulled from the Cobalt-Cobalt bonds in Table 1 of the paper
@@ -60,7 +60,7 @@ void initialParameters() //This will create the original 100 parameter sets
         tournament[i] = (ParSet *) malloc(sizeof(ParSet));
     }
     lammps_open_no_mpi(0, NULL, &lmps);  //Initialize LAMMPS pointer
-    first = 0; 
+    first = 0;
 }
 
 //This file will be called to create a .tersoff file containing the parameters of an individual ParSet
@@ -72,20 +72,20 @@ char * writeTersoffFile(ParSet * p)
     sprintf(idString, "%d",(int) p->id);
     strcat(tersoffFile, "Pt");
     strcat(tersoffFile, idString);
-    strcat(tersoffFile, ".tersoff"); //tersoffFile now holds the name of a file for this individual's parameters
+    strcat(tersoffFile, ".tersoff\0"); //tersoffFile now holds the name of a file for this individual's parameters
 
     //printf("%s \n", tersoffFile);
 
     //c, d, costheta0 (h), n, beta, lambda2, B, R, D (s), lambda1, A
     //Second, build atomic parameters string
     char * paramString = (char *) malloc(200 * sizeof(char)); //paramString will hold the atomic parameters
-    memcpy(paramString, "Pt Pt Pt 3.0 1.0 0.0 ", 21 * sizeof(char));
+    memcpy(paramString, "Pt Pt Pt 3.0 1.0 0.0 \0", 22 * sizeof(char));
     //add c to paramString
     char * param = (char *) malloc(11 * sizeof(char));
     sprintf(param, "%10f", p->c);
-    //printf("%s \n", param); 
+    //printf("%s \n", param);
     strcat(paramString, param);
-    strcat(paramString, " "); 
+    strcat(paramString, " ");
     //add d
     sprintf(param, "%10f", p->d);
     //printf("%s \n", param);
@@ -135,7 +135,7 @@ char * writeTersoffFile(ParSet * p)
     sprintf(param, "%10f", p->a);
     //printf("%s \n", param);
     strcat(paramString, param);
-    strcat(paramString, "\n");
+    strcat(paramString, "\n \0");
 
     //printf("%s \n", paramString);
 
@@ -156,11 +156,11 @@ char * writeTersoffFile(ParSet * p)
 float getPotential(ParSet * p, char * geo, char * paramFile)
 {
     //printf("%s \n", geo);
-    //printf("%s \n", paramFile); 
-    //printf("Initializing string buffer \n"); 
+    //printf("%s \n", paramFile);
+    //printf("Initializing string buffer \n");
     //char* buf = (char *) malloc(sizeof(char) * 2848);
 
-    //printf("Initializing pipes to redirect output \n"); 
+    //printf("Initializing pipes to redirect output \n");
     //Use pipes to redirect stdout
     //int npipe[2];
     //pipe(npipe);
@@ -168,48 +168,48 @@ float getPotential(ParSet * p, char * geo, char * paramFile)
     //dup2(npipe[1], STDOUT_FILENO);
     //close(npipe[1]);
 
-    //printf("Building command string \n"); 
+    //printf("Building command string \n");
     //Build a command string that sets up the geometry and parameters of the tersoff function for LAMMPS
-    char * commandString = (char *) malloc(sizeof(char) * 350); 
-    //if(first == 0) 
+    char * commandString = (char *) malloc(sizeof(char) * 350);
+    //if(first == 0)
     //{
-    	memcpy(commandString, "#clearing garbage \n \0",21 * sizeof(char) );
-    	strcat(commandString, "log\tlog");
-//	char * idString = (char *) malloc(7 * sizeof(char)); 
-//	sprintf(idString, "%d", (int) p->id); 
-//	strcat(commandString, idString); 
-	strcat(commandString, ".lammps\n"); 
-    	strcat(commandString, "echo\tnone\n");
-//	first = 1; 
+        memcpy(commandString, "#clearing garbage \n \0",21 * sizeof(char) );
+        strcat(commandString, "log\tlog");
+//      char * idString = (char *) malloc(7 * sizeof(char));
+//      sprintf(idString, "%d", (int) p->id);
+//      strcat(commandString, idString);
+        strcat(commandString, ".lammps\n");
+        strcat(commandString, "echo\tscreen\n");
+//      first = 1;
 
-    	strcat(commandString, "boundary\tp p p\n");
-    	strcat(commandString, "units\treal\n");
-    	strcat(commandString, "atom_style\tcharge\n");
-    	strcat(commandString, "read_data\t");
-    	strcat(commandString, geo);
-    	strcat(commandString, "\n"); 
-    	strcat(commandString, "pair_style\ttersoff\n");
-    	strcat(commandString, "pair_coeff\t* * ");
-    	strcat(commandString, paramFile);
-    	strcat(commandString, " Pt\n");
-    	strcat(commandString, "neighbor\t2 bin\n");
-    	strcat(commandString, "neigh_modify\tevery 10 delay 0 check no\n");
-    	strcat(commandString, "minimize\t1.0e-4 1.0e-6 100 1000\n");
-    	strcat(commandString, "timestep\t0.25\n \0");
-	//first = 1; 
+        strcat(commandString, "boundary\tp p p\n");
+        strcat(commandString, "units\treal\n");
+        strcat(commandString, "atom_style\tcharge\n");
+        strcat(commandString, "read_data\t");
+        strcat(commandString, geo);
+        strcat(commandString, "\n");
+        strcat(commandString, "pair_style\ttersoff\n");
+        strcat(commandString, "pair_coeff\t* * ");
+        strcat(commandString, paramFile);
+        strcat(commandString, " Pt\n");
+        strcat(commandString, "neighbor\t2 bin\n");
+        strcat(commandString, "neigh_modify\tevery 10 delay 0 check no\n");
+        strcat(commandString, "minimize\t1.0e-4 1.0e-6 100 1000\n");
+        strcat(commandString, "timestep\t0.25\n \0");
+        //first = 1;
     //}
-    /**else 
+    /**else
     {
-	memcpy(commandString, "#trying to remove garbage \n \0", 27 * sizeof(char));
-	strcat(commandString, "read_data\t"); 
-	strcat(commandString, geo); 
-	strcat(commandString, "\npair_coeff\t** "); 
-	strcat(commandString, paramFile); 
-	strcat(commandString, " Pt\n"); 
+        memcpy(commandString, "#trying to remove garbage \n \0", 27 * sizeof(char));
+        strcat(commandString, "read_data\t");
+        strcat(commandString, geo);
+        strcat(commandString, "\npair_coeff\t** ");
+        strcat(commandString, paramFile);
+        strcat(commandString, " Pt\n");
     }**/
     //printf("%s \n", commandString);
-    
-    //void * lmps; 
+
+    //void * lmps;
     //lammps_open_no_mpi(0, NULL, &lmps);  //Initialize LAMMPS pointer
     //Submit command to LAMMPS
     lammps_commands_string(lmps, commandString);
@@ -241,10 +241,10 @@ float getPotential(ParSet * p, char * geo, char * paramFile)
          ss >> etotal;
     }
 **/
-    free(commandString); 
-    //free(idString); 
+    free(commandString);
+    //free(idString);
     //lammps_free(lmps);
-    //lammps_close(lmps); 
+    //lammps_close(lmps);
     return (rand() / RAND_MAX);
 }
 
@@ -256,11 +256,12 @@ float  getFitness(ParSet * p)
     char * paramFile = writeTersoffFile(p);
     float p1 = getPotential(p, "DataPtbcc.in", paramFile); //Get potential with two different geometries and compare them. (Can expand later)
     float p2 = getPotential(p, "DataPtbcc93.in", paramFile);
-    //float p2 = getPotential("DataPtbcc.in", paramFile); 
+    //float p2 = getPotential("DataPtbcc.in", paramFile);
     float diff1 = p1 - p2;
     float diff2 = PTBCC - PTBCC93;
     float diff3 = diff2 - diff1;
     float errorVal = pow(diff3, 2);
+    free(paramFile);
     return errorVal / weight;
 }
 
@@ -508,6 +509,3 @@ int main(int argc, char** argv) {
     printf("Exitting");
     return 0;
 }
-
-
-
