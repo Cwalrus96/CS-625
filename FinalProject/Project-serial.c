@@ -22,41 +22,41 @@ ParSet * oldBest;  //This variable will hold the old parameter set with the high
 int id; //keeps track of the id for new ParSet individuals
 struct timeval t1, t2; //used for measuring time intervals
 struct rusage memUsed;
-int mutateMax;
+int mutateMax = 10;
 float elapsedTime;
 void * lmps;
 
 const float PTBCC = -275.046;
-const float PTBCC97 = -270.6076653;
-const float PTBCC95 = -259.7649905;
+//const float PTBCC97 = -270.6076653;
+//const float PTBCC95 = -259.7649905;
 const float PTBCC93 = -241.4031493;
-const float PTBCC103 = -272.77316546;
-const float PTBCC105 = -266.95674333;
-const float PTBCC107 = -259.20086043;
+//const float PTBCC103 = -272.77316546;
+//const float PTBCC105 = -266.95674333;
+//const float PTBCC107 = -259.20086043;
 
 const float PTFCC = -556.68203601;
-const float PTFCC97 = -545.98671808;
-const float PTFCC95 = -524.24895188;
+//const float PTFCC97 = -545.98671808;
+//const float PTFCC95 = -524.24895188;
 const float PTFCC93 = -487.03936076;
-const float PTFCC103 = -548.97963052;
-const float PTFCC105 = -536.71478904;
-const float PTFCC107 = -520.59643877;
+//const float PTFCC103 = -548.97963052;
+//const float PTFCC105 = -536.71478904;
+//const float PTFCC107 = -520.59643877;
 
 const float PTSC = -111.50174437;
-const float PTSC97 = -109.32768872;
-const float PTSC95 = -105.26301453;
+//const float PTSC97 = -109.32768872;
+//const float PTSC95 = -105.26301453;
 const float PTSC93 = -98.305635193;
-const float PTSC103 = -109.8785013;
-const float PTSC105 = -107.60075391;
-const float PTSC107 = -104.6146305;
+//const float PTSC103 = -109.8785013;
+//const float PTSC105 = -107.60075391;
+//const float PTSC107 = -104.6146305;
 
 const float PTHCP = -274.15742061;
-const float PTHCP103 = -270.14737685;
-const float PTHCP105 = -264.08533688;
-const float PTHCP107 = -256.1035068;
+//const float PTHCP103 = -270.14737685;
+//const float PTHCP105 = -264.08533688;
+//const float PTHCP107 = -256.1035068;
 const float PTHCP93 = -239.79702863;
-const float PTHCP97 = -259.56185016;
-const float PTHCP95 = -258.09995016;
+//const float PTHCP97 = -259.56185016;
+//const float PTHCP95 = -258.09995016;
 
 const float weight = 5.0;
 FILE * file;
@@ -327,66 +327,66 @@ float  getFitness(ParSet * p)
     char * paramFile = writeTersoffFile(p);
     float p1 = getPotential(p, "geo/gPtbcc.in", paramFile); //Get potential with two different geometries and compare them. (Can expand later
     float p2 = getPotential(p, "geo/g0.93xPtbcc.in", paramFile);
-    float p3 = getPotential(p, "geo/g0.95xPtbcc.in", paramFile);
-    float p4 = getPotential(p, "geo/g0.97xPtbcc.in", paramFile);
-    float p5 = getPotential(p, "geo/g1.03xPtbcc.in", paramFile);
-    float p6 = getPotential(p, "geo/g1.05xPtbcc.in", paramFile);
-    float p7 = getPotential(p, "geo/g1.07xPtbcc.in", paramFile);
+    //float p3 = getPotential(p, "geo/g0.95xPtbcc.in", paramFile);
+    //float p4 = getPotential(p, "geo/g0.97xPtbcc.in", paramFile);
+    //float p5 = getPotential(p, "geo/g1.03xPtbcc.in", paramFile);
+    //float p6 = getPotential(p, "geo/g1.05xPtbcc.in", paramFile);
+    //float p7 = getPotential(p, "geo/g1.07xPtbcc.in", paramFile);
 
     float p8 = getPotential(p, "geo/gPtfcc.in", paramFile); 
     float p9 = getPotential(p, "geo/g0.93xPtfcc.in", paramFile);
-    float p10 = getPotential(p, "geo/g0.95xPtfcc.in", paramFile);
-    float p11 = getPotential(p, "geo/g0.97xPtfcc.in", paramFile);
-    float p12 = getPotential(p, "geo/g1.03xPtfcc.in", paramFile);
-    float p13 = getPotential(p, "geo/g1.05xPtfcc.in", paramFile);
-    float p14 = getPotential(p, "geo/g1.07xPtfcc.in", paramFile);
+    //float p10 = getPotential(p, "geo/g0.95xPtfcc.in", paramFile);
+    //float p11 = getPotential(p, "geo/g0.97xPtfcc.in", paramFile);
+    //float p12 = getPotential(p, "geo/g1.03xPtfcc.in", paramFile);
+    //float p13 = getPotential(p, "geo/g1.05xPtfcc.in", paramFile);
+    //float p14 = getPotential(p, "geo/g1.07xPtfcc.in", paramFile);
     
     float p15 = getPotential(p, "geo/gPtSC.in", paramFile); 
     float p16 = getPotential(p, "geo/g0.93xPtsc.in", paramFile);
-    float p17 = getPotential(p, "geo/g0.95xPtsc.in", paramFile);
-    float p18 = getPotential(p, "geo/g0.97xPtsc.in", paramFile);
-    float p19 = getPotential(p, "geo/g1.03xPtsc.in", paramFile);
-    float p20 = getPotential(p, "geo/g1.05xPtsc.in", paramFile);
-    float p21 = getPotential(p, "geo/g1.07xPtsc.in", paramFile);
+    //float p17 = getPotential(p, "geo/g0.95xPtsc.in", paramFile);
+    //float p18 = getPotential(p, "geo/g0.97xPtsc.in", paramFile);
+    //float p19 = getPotential(p, "geo/g1.03xPtsc.in", paramFile);
+    //float p20 = getPotential(p, "geo/g1.05xPtsc.in", paramFile);
+    //float p21 = getPotential(p, "geo/g1.07xPtsc.in", paramFile);
 
     float p22 = getPotential(p, "geo/gPthcp.in", paramFile); 
     float p23 = getPotential(p, "geo/g0.93Pthcp.in", paramFile);
-    float p24 = getPotential(p, "geo/g0.95Pthcp.in", paramFile);
-    float p25 = getPotential(p, "geo/g0.97Pthcp.in", paramFile);
-    float p26 = getPotential(p, "geo/g1.03xPthcp.in", paramFile);
-    float p27 = getPotential(p, "geo/g1.05xPthcp.in", paramFile);
-    float p28 = getPotential(p, "geo/g1.07xPthcp.in", paramFile);
+    //float p24 = getPotential(p, "geo/g0.95Pthcp.in", paramFile);
+    //float p25 = getPotential(p, "geo/g0.97Pthcp.in", paramFile);
+    //float p26 = getPotential(p, "geo/g1.03xPthcp.in", paramFile);
+    //float p27 = getPotential(p, "geo/g1.05xPthcp.in", paramFile);
+    //float p28 = getPotential(p, "geo/g1.07xPthcp.in", paramFile);
     
     //float p2 = getPotential("DataPtbcc.in", paramFile);
     float totalError = 0.0; 
     
     totalError += calcError(PTBCC, PTBCC93, p1, p2); 
-    totalError += calcError(PTBCC, PTBCC95, p1, p3); 
-    totalError += calcError(PTBCC, PTBCC97, p1, p4);
-    totalError += calcError(PTBCC, PTBCC103, p1, p5);
-    totalError += calcError(PTBCC, PTBCC105, p1, p6);
-    totalError += calcError(PTBCC, PTBCC107, p1, p7);
+    //totalError += calcError(PTBCC, PTBCC95, p1, p3); 
+    //totalError += calcError(PTBCC, PTBCC97, p1, p4);
+    //totalError += calcError(PTBCC, PTBCC103, p1, p5);
+    //totalError += calcError(PTBCC, PTBCC105, p1, p6);
+    //totalError += calcError(PTBCC, PTBCC107, p1, p7);
     
     totalError += calcError(PTFCC, PTFCC93, p8, p9);
-    totalError += calcError(PTFCC, PTFCC95, p8, p10);
-    totalError += calcError(PTFCC, PTFCC97, p8, p11);
-    totalError += calcError(PTFCC, PTFCC103, p8, p12);
-    totalError += calcError(PTFCC, PTFCC105, p8, p13);
-    totalError += calcError(PTFCC, PTFCC107 , p8, p14);
+    //totalError += calcError(PTFCC, PTFCC95, p8, p10);
+    //totalError += calcError(PTFCC, PTFCC97, p8, p11);
+    //totalError += calcError(PTFCC, PTFCC103, p8, p12);
+    //totalError += calcError(PTFCC, PTFCC105, p8, p13);
+    //totalError += calcError(PTFCC, PTFCC107 , p8, p14);
     
     totalError += calcError(PTSC, PTSC93, p15, p16);
-    totalError += calcError(PTSC, PTSC95, p15, p17);
-    totalError += calcError(PTSC, PTSC97, p15, p18);
-    totalError += calcError(PTSC, PTSC103, p15, p19);
-    totalError += calcError(PTSC, PTSC105, p15, p20);
-    totalError += calcError(PTSC, PTSC107, p15, p21);
+    //totalError += calcError(PTSC, PTSC95, p15, p17);
+    //totalError += calcError(PTSC, PTSC97, p15, p18);
+    //totalError += calcError(PTSC, PTSC103, p15, p19);
+    //totalError += calcError(PTSC, PTSC105, p15, p20);
+    //totalError += calcError(PTSC, PTSC107, p15, p21);
     
     totalError += calcError(PTHCP, PTHCP93, p22, p23);
-    totalError += calcError(PTHCP, PTHCP93, p22, p24);
-    totalError += calcError(PTHCP, PTHCP93, p22, p25);
-    totalError += calcError(PTHCP, PTHCP93, p22, p26);
-    totalError += calcError(PTHCP, PTHCP93, p22, p27);
-    totalError += calcError(PTHCP, PTHCP93, p22, p28);
+    //totalError += calcError(PTHCP, PTHCP93, p22, p24);
+    //totalError += calcError(PTHCP, PTHCP93, p22, p25);
+    //totalError += calcError(PTHCP, PTHCP93, p22, p26);
+    //totalError += calcError(PTHCP, PTHCP93, p22, p27);
+    //totalError += calcError(PTHCP, PTHCP93, p22, p28);
 
     
     char * logFile = (char *)malloc(20 * sizeof(char));
