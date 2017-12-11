@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#include<string.h>
 #include<sys/time.h>
 #include<sys/resource.h>
 #include "ParSet.h"
@@ -662,7 +663,7 @@ void freeAll() //this function is called at the end, and frees all global arrays
     {
         free(tournament[i]);
     }
-    free(tournament);cd
+    free(tournament);
 }
 
 
