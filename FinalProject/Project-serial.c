@@ -185,7 +185,7 @@ char * writeTersoffFile(ParSet * p)
     return tersoffFile;
 
 }
-
+//Need to recompile, so added this comment
 //Call this function to calculate the tersoff potential for an individual.
 //geo is a string that contains the name of a file. This file specifies the atomic geometry
 //paramFile is a .tersoff file that contains the parameters of a particular individual.
@@ -312,13 +312,13 @@ float getPotential(ParSet * p, char * geo, char * paramFile)
 }
 
 //This will be used to calculate a single error value. All error values will then be summed together
-float calcError(const float g1,const float g2, float p1, float p2) 
+float calcError(const float g1,const float g2, float p1, float p2)
 {
     float diff1 = p1 - p2;
     float diff2 = g1 - g2;
     float diff3 = diff2 - diff1;
     float errorVal = pow(diff3, 2);
-    return errorVal / weight;   
+    return errorVal / weight;
 }
 
 float  getFitness(ParSet * p)
@@ -333,15 +333,15 @@ float  getFitness(ParSet * p)
     //float p6 = getPotential(p, "geo/g1.05xPtbcc.in", paramFile);
     //float p7 = getPotential(p, "geo/g1.07xPtbcc.in", paramFile);
 
-    float p8 = getPotential(p, "geo/gPtfcc.in", paramFile); 
+    float p8 = getPotential(p, "geo/gPtfcc.in", paramFile);
     float p9 = getPotential(p, "geo/g0.93xPtfcc.in", paramFile);
     //float p10 = getPotential(p, "geo/g0.95xPtfcc.in", paramFile);
     //float p11 = getPotential(p, "geo/g0.97xPtfcc.in", paramFile);
     //float p12 = getPotential(p, "geo/g1.03xPtfcc.in", paramFile);
     //float p13 = getPotential(p, "geo/g1.05xPtfcc.in", paramFile);
     //float p14 = getPotential(p, "geo/g1.07xPtfcc.in", paramFile);
-    
-    float p15 = getPotential(p, "geo/gPtSC.in", paramFile); 
+
+    float p15 = getPotential(p, "geo/gPtSC.in", paramFile);
     float p16 = getPotential(p, "geo/g0.93xPtsc.in", paramFile);
     //float p17 = getPotential(p, "geo/g0.95xPtsc.in", paramFile);
     //float p18 = getPotential(p, "geo/g0.97xPtsc.in", paramFile);
@@ -349,38 +349,38 @@ float  getFitness(ParSet * p)
     //float p20 = getPotential(p, "geo/g1.05xPtsc.in", paramFile);
     //float p21 = getPotential(p, "geo/g1.07xPtsc.in", paramFile);
 
-    float p22 = getPotential(p, "geo/gPthcp.in", paramFile); 
+    float p22 = getPotential(p, "geo/gPthcp.in", paramFile);
     float p23 = getPotential(p, "geo/g0.93Pthcp.in", paramFile);
     //float p24 = getPotential(p, "geo/g0.95Pthcp.in", paramFile);
     //float p25 = getPotential(p, "geo/g0.97Pthcp.in", paramFile);
     //float p26 = getPotential(p, "geo/g1.03xPthcp.in", paramFile);
     //float p27 = getPotential(p, "geo/g1.05xPthcp.in", paramFile);
     //float p28 = getPotential(p, "geo/g1.07xPthcp.in", paramFile);
-    
+
     //float p2 = getPotential("DataPtbcc.in", paramFile);
-    float totalError = 0.0; 
-    
-    totalError += calcError(PTBCC, PTBCC93, p1, p2); 
-    //totalError += calcError(PTBCC, PTBCC95, p1, p3); 
+    float totalError = 0.0;
+
+    totalError += calcError(PTBCC, PTBCC93, p1, p2);
+    //totalError += calcError(PTBCC, PTBCC95, p1, p3);
     //totalError += calcError(PTBCC, PTBCC97, p1, p4);
     //totalError += calcError(PTBCC, PTBCC103, p1, p5);
     //totalError += calcError(PTBCC, PTBCC105, p1, p6);
     //totalError += calcError(PTBCC, PTBCC107, p1, p7);
-    
+
     totalError += calcError(PTFCC, PTFCC93, p8, p9);
     //totalError += calcError(PTFCC, PTFCC95, p8, p10);
     //totalError += calcError(PTFCC, PTFCC97, p8, p11);
     //totalError += calcError(PTFCC, PTFCC103, p8, p12);
     //totalError += calcError(PTFCC, PTFCC105, p8, p13);
     //totalError += calcError(PTFCC, PTFCC107 , p8, p14);
-    
+
     totalError += calcError(PTSC, PTSC93, p15, p16);
     //totalError += calcError(PTSC, PTSC95, p15, p17);
     //totalError += calcError(PTSC, PTSC97, p15, p18);
     //totalError += calcError(PTSC, PTSC103, p15, p19);
     //totalError += calcError(PTSC, PTSC105, p15, p20);
     //totalError += calcError(PTSC, PTSC107, p15, p21);
-    
+
     totalError += calcError(PTHCP, PTHCP93, p22, p23);
     //totalError += calcError(PTHCP, PTHCP93, p22, p24);
     //totalError += calcError(PTHCP, PTHCP93, p22, p25);
@@ -388,7 +388,7 @@ float  getFitness(ParSet * p)
     //totalError += calcError(PTHCP, PTHCP93, p22, p27);
     //totalError += calcError(PTHCP, PTHCP93, p22, p28);
 
-    
+
     char * logFile = (char *)malloc(20 * sizeof(char));
     memcpy(logFile, "log\0", 4 * sizeof(char));
     char * idString = (char *) malloc(7 * sizeof(char));
@@ -400,8 +400,8 @@ float  getFitness(ParSet * p)
     free(idString);
     remove(paramFile);
     free(paramFile);
-    
-    return totalError; 
+
+    return totalError;
 }
 
 void getFitnessAll(ParSet ** p, int setID) //This function will get the fitness scores for the specified subset of individuals
@@ -649,3 +649,4 @@ int main(int argc, char** argv) {
     //printf("Exitting");
     return 0;
 }
+
