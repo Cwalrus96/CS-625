@@ -26,7 +26,8 @@ int source, tag, jobNumber;
 ParSet * job;
 MPI_Status stat;
 float elapsedTime;
-void * lmps; 
+void *lmps;
+int color, numComms, commRank;
 
 const float PTBCC = -275.046;
 //const float PTBCC97 = -270.6076653;
@@ -304,13 +305,13 @@ float getPotential(ParSet * p, char * geo, char * paramFile)
 }
 
 //This will be used to calculate a single error value. All error values will then be summed together
-float calcError(const float g1,const float g2, float p1, float p2) 
+float calcError(const float g1,const float g2, float p1, float p2)
 {
     float diff1 = p1 - p2;
     float diff2 = g1 - g2;
     float diff3 = diff2 - diff1;
     float errorVal = pow(diff3, 2);
-    return errorVal / weight;   
+    return errorVal / weight;
 }
 
 float  getFitness(ParSet * p)
@@ -325,15 +326,15 @@ float  getFitness(ParSet * p)
     //float p6 = getPotential(p, "geo/g1.05xPtbcc.in", paramFile);
     //float p7 = getPotential(p, "geo/g1.07xPtbcc.in", paramFile);
 
-    float p8 = getPotential(p, "geo/gPtfcc.in", paramFile); 
+    float p8 = getPotential(p, "geo/gPtfcc.in", paramFile);
     float p9 = getPotential(p, "geo/g0.93xPtfcc.in", paramFile);
     //float p10 = getPotential(p, "geo/g0.95xPtfcc.in", paramFile);
     //float p11 = getPotential(p, "geo/g0.97xPtfcc.in", paramFile);
     //float p12 = getPotential(p, "geo/g1.03xPtfcc.in", paramFile);
     //float p13 = getPotential(p, "geo/g1.05xPtfcc.in", paramFile);
     //float p14 = getPotential(p, "geo/g1.07xPtfcc.in", paramFile);
-    
-    float p15 = getPotential(p, "geo/gPtSC.in", paramFile); 
+
+    float p15 = getPotential(p, "geo/gPtSC.in", paramFile);
     float p16 = getPotential(p, "geo/g0.93xPtsc.in", paramFile);
     //float p17 = getPotential(p, "geo/g0.95xPtsc.in", paramFile);
     //float p18 = getPotential(p, "geo/g0.97xPtsc.in", paramFile);
@@ -341,38 +342,38 @@ float  getFitness(ParSet * p)
     //float p20 = getPotential(p, "geo/g1.05xPtsc.in", paramFile);
     //float p21 = getPotential(p, "geo/g1.07xPtsc.in", paramFile);
 
-    float p22 = getPotential(p, "geo/gPthcp.in", paramFile); 
+    float p22 = getPotential(p, "geo/gPthcp.in", paramFile);
     float p23 = getPotential(p, "geo/g0.93Pthcp.in", paramFile);
     //float p24 = getPotential(p, "geo/g0.95Pthcp.in", paramFile);
     //float p25 = getPotential(p, "geo/g0.97Pthcp.in", paramFile);
     //float p26 = getPotential(p, "geo/g1.03xPthcp.in", paramFile);
     //float p27 = getPotential(p, "geo/g1.05xPthcp.in", paramFile);
     //float p28 = getPotential(p, "geo/g1.07xPthcp.in", paramFile);
-    
+
     //float p2 = getPotential("DataPtbcc.in", paramFile);
-    float totalError = 0.0; 
-    
-    totalError += calcError(PTBCC, PTBCC93, p1, p2); 
-    //totalError += calcError(PTBCC, PTBCC95, p1, p3); 
+    float totalError = 0.0;
+
+    totalError += calcError(PTBCC, PTBCC93, p1, p2);
+    //totalError += calcError(PTBCC, PTBCC95, p1, p3);
     //totalError += calcError(PTBCC, PTBCC97, p1, p4);
     //totalError += calcError(PTBCC, PTBCC103, p1, p5);
     //totalError += calcError(PTBCC, PTBCC105, p1, p6);
     //totalError += calcError(PTBCC, PTBCC107, p1, p7);
-    
+
     totalError += calcError(PTFCC, PTFCC93, p8, p9);
     //totalError += calcError(PTFCC, PTFCC95, p8, p10);
     //totalError += calcError(PTFCC, PTFCC97, p8, p11);
     //totalError += calcError(PTFCC, PTFCC103, p8, p12);
     //totalError += calcError(PTFCC, PTFCC105, p8, p13);
     //totalError += calcError(PTFCC, PTFCC107 , p8, p14);
-    
+
     totalError += calcError(PTSC, PTSC93, p15, p16);
     //totalError += calcError(PTSC, PTSC95, p15, p17);
     //totalError += calcError(PTSC, PTSC97, p15, p18);
     //totalError += calcError(PTSC, PTSC103, p15, p19);
     //totalError += calcError(PTSC, PTSC105, p15, p20);
     //totalError += calcError(PTSC, PTSC107, p15, p21);
-    
+
     totalError += calcError(PTHCP, PTHCP93, p22, p23);
     //totalError += calcError(PTHCP, PTHCP93, p22, p24);
     //totalError += calcError(PTHCP, PTHCP93, p22, p25);
@@ -380,7 +381,7 @@ float  getFitness(ParSet * p)
     //totalError += calcError(PTHCP, PTHCP93, p22, p27);
     //totalError += calcError(PTHCP, PTHCP93, p22, p28);
 
-    
+
     char * logFile = (char *)malloc(20 * sizeof(char));
     memcpy(logFile, "log\0", 4 * sizeof(char));
     char * idString = (char *) malloc(7 * sizeof(char));
@@ -392,8 +393,8 @@ float  getFitness(ParSet * p)
     free(idString);
     remove(paramFile);
     free(paramFile);
-    
-    return totalError; 
+
+    return totalError;
 }
 
 
@@ -526,18 +527,17 @@ void geneticOperations() //This will coordinate and call crossover and mutate
 
 /**void simplex()  //do final local minimization. maybe in LAMMPS?
 {
-
 }**/
 
 void distributeJobs() //This function will be called once per generation by Rank 0, distributing jobs to all other processes
 {
     int jobRequest;
     jobNumber = 0;
-    int numRecieved = 0; 
+    int numRecieved = 0;
     while((pars[jobNumber]->error > 0) && (jobNumber < 100) && (numRecieved < 100)) //Dont send out individuals if fitness has already been calculated
     {
         jobNumber++;
-        numRecieved++; 
+        numRecieved++;
     }
     while((jobNumber < 100) || (numRecieved < 100)) //Send out jobs until end is reached
     {
@@ -553,14 +553,14 @@ void distributeJobs() //This function will be called once per generation by Rank
             while((pars[jobNumber]->error > 0) && (jobNumber < 100) & (numRecieved < 100)) //Dont send out individuals if fitness has already been calculated
             {
                 jobNumber++;
-                numRecieved++; 
+                numRecieved++;
             }
         }
         else //Other tags mean they are sending completed job
         {
             //update ParSet array with newly completed job
             MPI_Recv(&(pars[tag]->error), 15, MPI_FLOAT, source, tag, MPI_COMM_WORLD, &stat);
-            numRecieved++; 
+            numRecieved++;
         }
     }
     geneticOperations();
@@ -589,7 +589,7 @@ void distributeJobs() //This function will be called once per generation by Rank
         {
             //update ParSet array with newly completed job
             MPI_Recv(&(pars[tag]->error), 15, MPI_FLOAT, source, tag, MPI_COMM_WORLD, &stat);
-            numRecieved++; 
+            numRecieved++;
         }
     }
     rankParSets(pars,0);
@@ -601,12 +601,12 @@ void distributeJobs() //This function will be called once per generation by Rank
     if(oldBest == currentBest) //If they still match, this is the exit condition. Program is done
     {
        exitLoop = 1;
-       //notifying worker processes of convergence; 
+       //notifying worker processes of convergence;
         for(i = 1; i < numCores; i++)
         {
-            MPI_Recv(&jobRequest, 1, MPI_INT, MPI_ANY_SOURCE, 200, MPI_COMM_WORLD, &stat); 
-            source = stat.MPI_SOURCE; 
-            MPI_Send(&(pars[0]->error), 15, MPI_FLOAT, source, 200, MPI_COMM_WORLD); 
+            MPI_Recv(&jobRequest, 1, MPI_INT, MPI_ANY_SOURCE, 200, MPI_COMM_WORLD, &stat);
+            source = stat.MPI_SOURCE;
+            MPI_Send(&(pars[0]->error), 15, MPI_FLOAT, source, 200, MPI_COMM_WORLD);
         }
     }
 }
@@ -629,7 +629,7 @@ void requestJobs() //This function will be called by all worker processes until 
     }
     else
     {
-        //do nothing   
+        //do nothing
     }
 }
 
@@ -669,10 +669,23 @@ void freeAll() //this function is called at the end, and frees all global arrays
 
 int main(int argc, char** argv) {
     //Step 1. Initialize MPI
+    printf("initializing MPI \n");
     MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD, &numCores);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    lammps_open(0, NULL,MPI_COMM_WORLD, &lmps);  //Initialize LAMMPS pointer
+    //Split each individual into their own MPI communicator for LAMMPS
+    printf("Splitting processes into groups of 2 for LAMMPS \n");
+    MPI_Comm id_comm;
+    numComms = numCores / 2;
+    color = rank % numComms;
+    MPI_Comm_split(MPI_COMM_WORLD, rank, rank, &id_comm);
+    MPI_Comm_rank(id_comm, &commRank);
+    printf("Global rank: %d, Communicator: %d, local rank: %d \n", rank, rank, commRank);
+    printf("rank %d about to open LAMMPS \n", rank);
+    //Added comment so it would recompile
+    lammps_open(0, NULL, id_comm, &lmps);  //Initialize LAMMPS pointer
+    printf("Rank %d just openned an instance of LAMMPS \n", rank);
+    printf("rank %d just openned lammps with the new communicator \n", rank);
     //Step 2. Get initial parameters
     if(rank == 0)
     {
@@ -683,8 +696,8 @@ int main(int argc, char** argv) {
         //a. Rank 0 will distribute fitness jobs to the other processes until exit condition is met
     if(rank == 0)
     {
-        currentBest = pars[1]; 
-        oldBest = pars[0]; 
+        currentBest = pars[1];
+        oldBest = pars[0];
         while(exitLoop != 1)
         {
             distributeJobs();
@@ -707,7 +720,9 @@ int main(int argc, char** argv) {
         }
         free(job);
     }
-    lammps_close(lmps); 
-    MPI_Finalize(); 
+    MPI_Comm_free(&id_comm);
+    lammps_close(lmps);
+    MPI_Finalize();
     return 0;
 }
+
